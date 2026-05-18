@@ -1,0 +1,130 @@
+# 🚀 Setup Completo: GitHub → Netlify
+
+## Paso 1: Subir a GitHub
+
+### 1.1 Crear repositorio en GitHub
+
+1. Andá a https://github.com (logueate)
+2. Click en "+" arriba a la derecha → "New repository"
+3. Nombre: `workboard`
+4. Dejas todo por defecto
+5. Click en "Create repository"
+
+### 1.2 Subir los archivos
+
+**Opción A - Con upload directo (más fácil):**
+
+1. En la página del repo que se abrió, buscá un botón verde "Code"
+2. Click en "Add file" → "Upload files"
+3. Arrastrá **TODA la carpeta `workboard-app`** (con todas sus subcarpetas)
+4. Abajo, click en "Commit changes"
+
+**Opción B - Con Git (desde terminal):**
+
+```bash
+cd workboard-app
+git init
+git add .
+git commit -m "Initial commit"
+git branch -M main
+git remote add origin https://github.com/tuusuario/workboard.git
+git push -u origin main
+```
+
+(Reemplazá `tuusuario` con tu usuario de GitHub)
+
+---
+
+## Paso 2: Deploy en Netlify
+
+### 2.1 Conectar GitHub con Netlify
+
+1. Andá a https://app.netlify.com
+2. Click en "New site from Git"
+3. Seleccioná "GitHub"
+4. Autorizá a Netlify (click en autorizar en la ventana que aparece)
+5. Buscá el repo `workboard`
+6. Click en el repo
+
+### 2.2 Configurar build
+
+Te va a pedir configuración de build. Pone esto:
+
+```
+Build command: npm run build
+Publish directory: build
+```
+
+Luego click en "Deploy site"
+
+### 2.3 ¡Espera 3-5 minutos!
+
+Netlify está compilando tu app. Cuando vea un ✅ verde, haz click en el link que te muestra. Ese es tu URL final.
+
+---
+
+## Paso 3: Compartir con tu equipo
+
+El link será algo como:
+
+```
+https://workboard-abc123.netlify.app
+```
+
+Compartí ese link con las 18 personas del equipo. ¡Ya pueden usar la app!
+
+---
+
+## ¿Qué hace cada archivo?
+
+```
+workboard-app/
+├── src/
+│   ├── App.jsx          ← Código principal de WorkBoard
+│   └── index.js         ← Entry point de React
+├── public/
+│   └── index.html       ← Página HTML principal
+├── package.json         ← Dependencias y scripts
+├── .gitignore          ← Archivos que NO sube a Git
+└── README.md           ← Documentación
+```
+
+---
+
+## Troubleshooting
+
+### "404 - NOT_FOUND" en Netlify
+
+✅ Solución: Crea un archivo `public/_redirects` con:
+```
+/* /index.html 200
+```
+
+(Netlify necesita esto para React Router)
+
+### Los cambios no aparecen
+
+1. Recarga la página (Ctrl+Shift+R o Cmd+Shift+R)
+2. Borra el caché del navegador
+3. Espera 1-2 minutos a que Netlify compile
+
+### El build falla
+
+1. Verifica que tengas todos los archivos (package.json, src/, public/)
+2. Revisa que no haya errores en el código
+3. En Netlify, mira los "Deploy logs" para ver el error
+
+---
+
+## Actualizar la app
+
+Si hacés cambios:
+
+1. Modificá los archivos en tu computadora
+2. Sube a GitHub (git push)
+3. Netlify detecta el cambio automáticamente y re-deploya
+4. En 2-3 minutos tu equipo ve los cambios
+
+---
+
+**¿Preguntas?** 📧 info@solpaloudeco.com.ar
