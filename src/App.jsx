@@ -8,20 +8,20 @@ const MEMBER_COLORS = ["#ef4444","#f97316","#eab308","#22c55e","#14b8a6","#3b82f
 const PROJECT_COLORS = ["#6366f1","#f59e0b","#22c55e","#ef4444","#14b8a6","#8b5cf6","#f97316","#ec4899","#0ea5e9","#84cc16"];
 
 const DEFAULT_MEMBERS = [
-  {id:1,name:"Sol",role:"Team"},{id:2,name:"Dolo",role:"Team"},
-  {id:3,name:"Grace",role:"Team"},{id:4,name:"Mariela",role:"Team"},
-  {id:5,name:"Meli",role:"Team"},{id:6,name:"Rita",role:"Team"},
-  {id:7,name:"Tobal",role:"Team"},{id:8,name:"Caro",role:"Team"},
-  {id:9,name:"Azul",role:"Team"},{id:10,name:"Mary",role:"Team"},
-  {id:11,name:"Cami",role:"Team"},{id:12,name:"Lu",role:"Team"},
-  {id:13,name:"Belen",role:"Team"},{id:14,name:"Nina",role:"Team"},
-  {id:15,name:"Dai",role:"Team"},{id:16,name:"Gaston",role:"Team"},
-  {id:17,name:"Eze",role:"Team"},{id:18,name:"Carlos",role:"Team"},
+  {id:1,name:"Ana García",role:"Project Manager"},{id:2,name:"Carlos López",role:"Desarrollador"},
+  {id:3,name:"María Rodríguez",role:"Diseñadora UX"},{id:4,name:"Juan Martínez",role:"Backend Dev"},
+  {id:5,name:"Laura Sánchez",role:"Frontend Dev"},{id:6,name:"Pedro Fernández",role:"QA Engineer"},
+  {id:7,name:"Sofía Torres",role:"Product Owner"},{id:8,name:"Miguel Ruiz",role:"DevOps"},
+  {id:9,name:"Elena Díaz",role:"Data Analyst"},{id:10,name:"Roberto Jiménez",role:"Scrum Master"},
+  {id:11,name:"Patricia Morales",role:"Marketing"},{id:12,name:"Andrés Castro",role:"Ventas"},
+  {id:13,name:"Carmen Vega",role:"RRHH"},{id:14,name:"Francisco Herrera",role:"Finanzas"},
+  {id:15,name:"Isabel Mendoza",role:"Legal"},{id:16,name:"Diego Reyes",role:"Soporte"},
+  {id:17,name:"Valentina Cruz",role:"Operaciones"},{id:18,name:"Martín Flores",role:"Logística"},
 ].map((m,i)=>({...m,color:MEMBER_COLORS[i]}));
+
 const DEFAULT_PROJECTS = [
-  {id:1,name:"Proyecto 1",description:"Proyecto de trabajo en equipo",color:"#6366f1",memberIds:[1,2,3,4,5,6,7,8],createdBy:1,createdAt:Date.now()},
-  {id:2,name:"Proyecto 2",description:"Segundo proyecto colaborativo",color:"#f59e0b",memberIds:[1,7,8,9,10,11,12],createdBy:7,createdAt:Date.now()},
-  {id:3,name:"Proyecto 3",description:"Tercer proyecto del equipo",color:"#22c55e",memberIds:[8,13,14,15,16,17,18],createdBy:8,createdAt:Date.now()},
+  {id:1,name:"Desarrollo Web",description:"Rediseño del sitio principal y mejoras de UX.",color:"#6366f1",memberIds:[1,2,3,4,5,6],createdBy:1,createdAt:Date.now()},
+  {id:2,name:"Campaña Marketing Q3",description:"Estrategia y ejecución de la campaña del tercer trimestre.",color:"#f59e0b",memberIds:[1,7,11,12],createdBy:7,createdAt:Date.now()},
 ];
 
 const DEFAULT_TASKS = [
@@ -84,13 +84,13 @@ function AuthFlow({members,onLogin}){
   const [error,setError]=useState(""); const [loading,setLoading]=useState(false);
   const [q,setQ]=useState(""); const [newPin,setNewPin]=useState("");
   const filtered=members.filter(m=>m.name.toLowerCase().includes(q.toLowerCase()));
-  const pickMember=async(member)=>{ setSelected(member);setError("");setPin("");setLoading(true); try{const r=await window.storage.get(`pin_${member.id}`,true);setStep(r?.value?"enter":"create");}catch{setStep("create");} setLoading(false); };
+  const pickMember=(member)=>{ setSelected(member);setError("");setPin("");setLoading(true); try{const r=localStorage.getItem(`pin_${member.id}`);setStep(r?"enter":"create");}catch{setStep("create");} setLoading(false); };
   const pressPin=(d)=>{ if(step==="create"||step==="enter")setPin(p=>p.length<4?p+d:p); if(step==="confirm")setPinConfirm(p=>p.length<4?p+d:p); };
   const deletePin=()=>{ if(step==="confirm")setPinConfirm(p=>p.slice(0,-1));else setPin(p=>p.slice(0,-1)); };
   useEffect(()=>{ if(step==="create"&&pin.length===4){setTimeout(()=>{setStep("confirm");setError("");},150);} },[pin,step]);
-  useEffect(()=>{ if(step==="confirm"&&pinConfirm.length===4){(async()=>{ if(pinConfirm!==pin){setError("Los PINs no coinciden.");setPin("");setPinConfirm("");setStep("create");return;} const h=await hashPin(pin);try{await window.storage.set(`pin_${selected.id}`,h,true);}catch{} onLogin(selected); })();} },[pinConfirm,step]);
-  useEffect(()=>{ if(step==="enter"&&pin.length===4){(async()=>{ setLoading(true);const h=await hashPin(pin);try{const r=await window.storage.get(`pin_${selected.id}`,true);if(r?.value===h){onLogin(selected);}else{setError("PIN incorrecto.");setPin("");}}catch{setError("Error al verificar.");setPin("");} setLoading(false); })();} },[pin,step]);
-  const forgotPin=async()=>{ const gen=String(Math.floor(1000+Math.random()*9000));const h=await hashPin(gen);try{await window.storage.set(`pin_${selected.id}`,h,true);}catch{} setNewPin(gen);const sub=encodeURIComponent(`WorkBoard – Nuevo PIN para ${selected.name}`);const body=encodeURIComponent(`Hola,\n\n${selected.name} solicitó un reseteo de PIN en WorkBoard.\n\nSu nuevo PIN es: ${gen}\n\nWorkBoard`);window.open(`mailto:${ADMIN_EMAIL}?subject=${sub}&body=${body}`);setStep("forgot"); };
+  useEffect(()=>{ if(step==="confirm"&&pinConfirm.length===4){(async()=>{ if(pinConfirm!==pin){setError("Los PINs no coinciden.");setPin("");setPinConfirm("");setStep("create");return;} const h=await hashPin(pin);try{localStorage.setItem(`pin_${selected.id}`,h);}catch{} onLogin(selected); })();} },[pinConfirm,step]);
+  useEffect(()=>{ if(step==="enter"&&pin.length===4){(async()=>{ setLoading(true);const h=await hashPin(pin);try{const r=localStorage.getItem(`pin_${selected.id}`);if(r===h){onLogin(selected);}else{setError("PIN incorrecto.");setPin("");}}catch{setError("Error al verificar.");setPin("");} setLoading(false); })();} },[pin,step]);
+  const forgotPin=async()=>{ const gen=String(Math.floor(1000+Math.random()*9000));const h=await hashPin(gen);try{localStorage.setItem(`pin_${selected.id}`,h);}catch{} setNewPin(gen);const sub=encodeURIComponent(`WorkBoard – Nuevo PIN para ${selected.name}`);const body=encodeURIComponent(`Hola,\n\n${selected.name} solicitó un reseteo de PIN en WorkBoard.\n\nSu nuevo PIN es: ${gen}\n\nWorkBoard`);window.open(`mailto:${ADMIN_EMAIL}?subject=${sub}&body=${body}`);setStep("forgot"); };
   const back=()=>{setStep("pick");setSelected(null);setPin("");setPinConfirm("");setError("");setNewPin("");};
   const currentPin=step==="confirm"?pinConfirm:pin;
   return (
@@ -439,9 +439,9 @@ export default function App(){
   useEffect(()=>{
     (async()=>{
       try{
-        const ur=await window.storage.get(USER_KEY); if(ur?.value)setCurrentUser(JSON.parse(ur.value));
-        const dr=await window.storage.get(STORAGE_KEY);
-        if(dr?.value){const d=JSON.parse(dr.value);if(d.tasks)setTasks(d.tasks);if(d.notifications)setNotifications(d.notifications);if(d.projects)setProjects(d.projects);}
+        const ur=localStorage.getItem(USER_KEY); if(ur)setCurrentUser(JSON.parse(ur));
+        const dr=localStorage.getItem(STORAGE_KEY);
+        if(dr){const d=JSON.parse(dr);if(d.tasks)setTasks(d.tasks);if(d.notifications)setNotifications(d.notifications);if(d.projects)setProjects(d.projects);}
       }catch{}
       setLoaded(true);
     })();
@@ -450,11 +450,11 @@ export default function App(){
   useEffect(()=>{
     if(!loaded) return;
     setSaving(true);
-    const t=setTimeout(async()=>{ try{await window.storage.set(STORAGE_KEY,JSON.stringify({tasks,notifications,projects}));}catch{} setSaving(false); },600);
+    const t=setTimeout(async()=>{ try{localStorage.setItem(STORAGE_KEY,JSON.stringify({tasks,notifications,projects}));}catch{} setSaving(false); },600);
     return()=>clearTimeout(t);
   },[tasks,notifications,projects,loaded]);
 
-  const handleLogin=async(m)=>{ setCurrentUser(m); try{await window.storage.set(USER_KEY,JSON.stringify(m));}catch{} };
+  const handleLogin=async(m)=>{ setCurrentUser(m); try{localStorage.setItem(USER_KEY,JSON.stringify(m));}catch{} };
   const handleLogout=()=>{ setCurrentUser(null); setCurrentProject(null); };
 
   const updateTask=(u)=>{setTasks(p=>p.map(t=>t.id===u.id?u:t));setSelected(u);};
