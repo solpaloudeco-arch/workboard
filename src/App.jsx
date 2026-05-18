@@ -19,8 +19,9 @@ const DEFAULT_MEMBERS = [
   {id:17,name:"Eze",role:"Team"},{id:18,name:"Carlos",role:"Team"},
 ].map((m,i)=>({...m,color:MEMBER_COLORS[i]}));
 const DEFAULT_PROJECTS = [
-  {id:1,name:"Desarrollo Web",description:"Rediseño del sitio principal y mejoras de UX.",color:"#6366f1",memberIds:[1,2,3,4,5,6],createdBy:1,createdAt:Date.now()},
-  {id:2,name:"Campaña Marketing Q3",description:"Estrategia y ejecución de la campaña del tercer trimestre.",color:"#f59e0b",memberIds:[1,7,11,12],createdBy:7,createdAt:Date.now()},
+  {id:1,name:"Proyecto 1",description:"Proyecto de trabajo en equipo",color:"#6366f1",memberIds:[1,2,3,4,5,6,7,8],createdBy:1,createdAt:Date.now()},
+  {id:2,name:"Proyecto 2",description:"Segundo proyecto colaborativo",color:"#f59e0b",memberIds:[1,7,8,9,10,11,12],createdBy:7,createdAt:Date.now()},
+  {id:3,name:"Proyecto 3",description:"Tercer proyecto del equipo",color:"#22c55e",memberIds:[8,13,14,15,16,17,18],createdBy:8,createdAt:Date.now()},
 ];
 
 const DEFAULT_TASKS = [
