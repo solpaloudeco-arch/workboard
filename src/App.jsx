@@ -8,15 +8,15 @@ const MEMBER_COLORS = ["#ef4444","#f97316","#eab308","#22c55e","#14b8a6","#3b82f
 const PROJECT_COLORS = ["#6366f1","#f59e0b","#22c55e","#ef4444","#14b8a6","#8b5cf6","#f97316","#ec4899","#0ea5e9","#84cc16"];
 
 const DEFAULT_MEMBERS = [
-  {id:1,name:"Ana García",role:"Project Manager"},{id:2,name:"Carlos López",role:"Desarrollador"},
-  {id:3,name:"María Rodríguez",role:"Diseñadora UX"},{id:4,name:"Juan Martínez",role:"Backend Dev"},
-  {id:5,name:"Laura Sánchez",role:"Frontend Dev"},{id:6,name:"Pedro Fernández",role:"QA Engineer"},
-  {id:7,name:"Sofía Torres",role:"Product Owner"},{id:8,name:"Miguel Ruiz",role:"DevOps"},
-  {id:9,name:"Elena Díaz",role:"Data Analyst"},{id:10,name:"Roberto Jiménez",role:"Scrum Master"},
-  {id:11,name:"Patricia Morales",role:"Marketing"},{id:12,name:"Andrés Castro",role:"Ventas"},
-  {id:13,name:"Carmen Vega",role:"RRHH"},{id:14,name:"Francisco Herrera",role:"Finanzas"},
-  {id:15,name:"Isabel Mendoza",role:"Legal"},{id:16,name:"Diego Reyes",role:"Soporte"},
-  {id:17,name:"Valentina Cruz",role:"Operaciones"},{id:18,name:"Martín Flores",role:"Logística"},
+  {id:1,name:"Sol",role:"Team"},{id:2,name:"Dolo",role:"Team"},
+  {id:3,name:"Grace",role:"Team"},{id:4,name:"Mariela",role:"Team"},
+  {id:5,name:"Meli",role:"Team"},{id:6,name:"Rita",role:"Team"},
+  {id:7,name:"Tobal",role:"Team"},{id:8,name:"Caro",role:"Team"},
+  {id:9,name:"Azul",role:"Team"},{id:10,name:"Mary",role:"Team"},
+  {id:11,name:"Cami",role:"Team"},{id:12,name:"Lu",role:"Team"},
+  {id:13,name:"Belen",role:"Team"},{id:14,name:"Nina",role:"Team"},
+  {id:15,name:"Dai",role:"Team"},{id:16,name:"Gaston",role:"Team"},
+  {id:17,name:"Eze",role:"Team"},{id:18,name:"Carlos",role:"Team"},
 ].map((m,i)=>({...m,color:MEMBER_COLORS[i]}));
 
 const DEFAULT_PROJECTS = [
