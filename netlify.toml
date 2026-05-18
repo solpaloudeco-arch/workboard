@@ -1,24 +1,3 @@
 [build]
-  command = "npm run build"
-  publish = "build"
-
-[build.environment]
-  NODE_VERSION = "18"
-
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
-
-Click en "Commit changes"
-
-Después:
-
-Volvé a Netlify
-Click en el proyecto "workboardspd"
-Buscá un botón de "Retry deploy" o "Clear cache and deploy"
-Click ahí
-¡Espera 3-5 minutos!
-
-
-¿Ya agregaste el archivo netlify.toml a GitHub? 👀
+command = "npm run build"
+publish = "build"
