@@ -23,6 +23,7 @@ const DEFAULT_MEMBERS = [
   {id:25,name:"Paloma",role:"Team"},{id:26,name:"Tamara",role:"Team"},
   {id:27,name:"Lara L",role:"Team"},{id:28,name:"Carlos",role:"Team"},
   {id:29,name:"Juan Cruz",role:"Team"},{id:30,name:"Melisa",role:"Team"},
+  {id:31,name:"Cris",role:"Team"},
 ].map((m,i)=>({...m,color:MEMBER_COLORS[i%MEMBER_COLORS.length]}));
 
 const DEFAULT_PROJECTS = [
