@@ -23,8 +23,8 @@ const MEMBERS = [
   {id:21,name:"Lourdes"},{id:22,name:"Eze"},{id:23,name:"Nina"},{id:24,name:"Naty"},
   {id:25,name:"Paloma"},{id:26,name:"Tamara"},{id:27,name:"Lara L"},{id:28,name:"Carlos"},
   {id:29,name:"Juan Cruz"},{id:30,name:"Melisa"},{id:31,name:"Cris"},
-  {id:32,name:"Yami"},{id:33,name:"Emi"},{id:34,name:"P34"},{id:35,name:"P35"},
-  {id:36,name:"P36"},{id:37,name:"P37"},{id:38,name:"P38"},{id:39,name:"P39"},{id:40,name:"P40"}
+  {id:32,name:"P32"},{id:33,name:"P33"},{id:34,name:"P34"},{id:35,name:"P35"},
+  {id:36,name:"P36"},{id:37,name:"P37"},{id:38,name:"P38"},{id:39,name:"Emi"},{id:40,name:"Yami"}
 ];
 
 const COLORS = ["#6366f1","#f59e0b","#22c55e","#ef4444","#14b8a6","#8b5cf6","#f97316","#ec4899","#0ea5e9"];
@@ -194,7 +194,7 @@ export default function WorkBoard() {
         {stage === 'pin' && (
           <div style={{width:'100%',maxWidth:300,textAlign:'center'}}>
             <p style={{color:'#cbd5e1',marginBottom:20,fontSize:16}}>Creá tu PIN de 4 dígitos</p>
-            <p style={{color:'#94a3b8',marginBottom:20}}{currentUser.name}</p>
+            <p style={{color:'#94a3b8',marginBottom:20}}>{currentUser.name}</p>
             <input type="password" maxLength="4" value={pinInput} onChange={(e) => setPinInput(e.target.value)} style={{width:'100%',padding:14,marginBottom:20,borderRadius:8,border:'1px solid #475569',background:'#0f172a',color:'white',fontSize:24,textAlign:'center',letterSpacing:'0.5em'}} />
             <button onClick={handleCreatePin} disabled={pinInput.length !== 4} style={{width:'100%',padding:12,background:pinInput.length === 4 ? '#3b82f6' : '#475569',border:'none',borderRadius:8,color:'white',cursor:pinInput.length === 4 ? 'pointer' : 'not-allowed',fontWeight:'bold'}}>
               Siguiente
