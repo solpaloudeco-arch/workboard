@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, setDoc } from 'firebase/firestore';
+import { getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: "AIzaSyBZM4_n_EPWnzUPGYf3UMOIEipMYvHRS_U",
@@ -27,7 +27,7 @@ const MEMBERS = [
   {id:36,name:"P36"},{id:37,name:"P37"},{id:38,name:"P38"},{id:39,name:"Emi"},{id:40,name:"Yami"}
 ];
 
-const COLORS = ["#6366f1","#f59e0b","#22c55e","#ef4444","#14b8a6","#8b5cf6","#f97316","#ec4899","#0ea5e9"];
+const COLORS = ["#6366f1","#f59e0b","#22c55e","#ef4444","#14b8a6"];
 
 export default function WorkBoard() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -41,9 +41,7 @@ export default function WorkBoard() {
   const [selectedTask, setSelectedTask] = useState(null);
   const [view, setView] = useState('kanban');
   const [showNewProject, setShowNewProject] = useState(false);
-  const [showNewTask, setShowNewTask] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
-  const [newTaskTitle, setNewTaskTitle] = useState('');
   const [commentText, setCommentText] = useState('');
 
   useEffect(() => {
@@ -62,8 +60,9 @@ export default function WorkBoard() {
 
   const handleSelectUser = (member) => {
     setCurrentUser(member);
-    setStage('pin');
     setPinInput('');
+    setPin('');
+    setTimeout(() => setStage('pin'), 10);
   };
 
   const handleCreatePin = () => {
@@ -83,22 +82,12 @@ export default function WorkBoard() {
     }
   };
 
-  const handleLogin = () => {
-    if (pinInput.length === 4) {
-      setStage('app');
-    } else {
-      alert('PIN debe tener 4 dígitos');
-    }
-  };
-
   const createProject = async () => {
     if (newProjectName.trim()) {
       try {
-        const colorIdx = projects.length % COLORS.length;
         await addDoc(collection(db, 'projects'), {
           name: newProjectName,
-          description: '',
-          color: COLORS[colorIdx],
+          color: COLORS[projects.length % COLORS.length],
           createdBy: currentUser.id,
           createdAt: new Date(),
           memberIds: [currentUser.id]
@@ -112,32 +101,19 @@ export default function WorkBoard() {
   };
 
   const createTask = async () => {
-    if (newTaskTitle.trim() && selectedProject) {
+    if (selectedProject) {
       try {
         await addDoc(collection(db, 'tasks'), {
           projectId: selectedProject.id,
-          title: newTaskTitle,
-          description: '',
-          assigneeId: currentUser.id,
-          priority: 'media',
+          title: 'Nueva tarea',
           column: 'todo',
           comments: [],
           createdBy: currentUser.id,
           createdAt: new Date()
         });
-        setNewTaskTitle('');
-        setShowNewTask(false);
       } catch (error) {
         console.error('Error:', error);
       }
-    }
-  };
-
-  const updateTaskColumn = async (taskId, newColumn) => {
-    try {
-      await updateDoc(doc(db, 'tasks', taskId), { column: newColumn });
-    } catch (error) {
-      console.error('Error:', error);
     }
   };
 
@@ -148,23 +124,13 @@ export default function WorkBoard() {
         const newComment = {
           id: Date.now(),
           text,
-          authorId: currentUser.id,
-          authorName: currentUser.name,
+          author: currentUser.name,
           createdAt: new Date().toISOString()
         };
         await updateDoc(doc(db, 'tasks', taskId), {
           comments: [...(task.comments || []), newComment]
         });
       }
-    } catch (error) {
-      console.error('Error:', error);
-    }
-  };
-
-  const deleteTask = async (taskId) => {
-    try {
-      await deleteDoc(doc(db, 'tasks', taskId));
-      setSelectedTask(null);
     } catch (error) {
       console.error('Error:', error);
     }
@@ -184,7 +150,7 @@ export default function WorkBoard() {
             <input type="text" placeholder="Buscar nombre..." value={searchText} onChange={(e) => setSearchText(e.target.value)} style={{width:'100%',padding:12,marginBottom:20,borderRadius:8,border:'1px solid #475569',background:'#0f172a',color:'white',fontSize:16}} />
             <div style={{maxHeight:400,overflowY:'auto',display:'grid',gridTemplateColumns:'repeat(auto-fit, minmax(120px, 1fr))',gap:10}}>
               {filteredMembers.map(m => (
-                <button key={m.id} onClick={() => handleSelectUser(m)} style={{padding:12,background:'#1e293b',border:'1px solid #475569',borderRadius:8,color:'white',cursor:'pointer',fontWeight:'bold',fontSize:14,transition:'all 0.2s'}}>
+                <button key={m.id} onClick={() => handleSelectUser(m)} style={{padding:12,background:'#1e293b',border:'1px solid #475569',borderRadius:8,color:'white',cursor:'pointer',fontWeight:'bold',fontSize:14}}>
                   {m.name}
                 </button>
               ))}
@@ -196,12 +162,9 @@ export default function WorkBoard() {
           <div style={{width:'100%',maxWidth:300,textAlign:'center'}}>
             <p style={{color:'#cbd5e1',marginBottom:20,fontSize:16}}>Creá tu PIN de 4 dígitos</p>
             <p style={{color:'#94a3b8',marginBottom:20}}>{currentUser.name}</p>
-            <input type="password" maxLength="4" value={pinInput} onChange={(e) => setPinInput(e.target.value)} style={{width:'100%',padding:14,marginBottom:20,borderRadius:8,border:'1px solid #475569',background:'#0f172a',color:'white',fontSize:24,textAlign:'center',letterSpacing:'0.5em'}} />
-            <button onClick={handleCreatePin} disabled={pinInput.length !== 4} style={{width:'100%',padding:12,background:pinInput.length === 4 ? '#3b82f6' : '#475569',border:'none',borderRadius:8,color:'white',cursor:pinInput.length === 4 ? 'pointer' : 'not-allowed',fontWeight:'bold'}}>
+            <input type="password" maxLength="4" value={pinInput} onChange={(e) => setPinInput(e.target.value)} style={{width:'100%',padding:14,marginBottom:20,borderRadius:8,border:'1px solid #475569',background:'#0f172a',color:'white',fontSize:24,textAlign:'center'}} />
+            <button onClick={handleCreatePin} disabled={pinInput.length !== 4} style={{width:'100%',padding:12,background:pinInput.length === 4 ? '#3b82f6' : '#475569',border:'none',borderRadius:8,color:'white',cursor:'pointer',fontWeight:'bold'}}>
               Siguiente
-            </button>
-            <button onClick={() => {setCurrentUser(null);setPinInput('');}} style={{width:'100%',padding:12,marginTop:10,background:'transparent',border:'1px solid #475569',borderRadius:8,color:'#94a3b8',cursor:'pointer'}}>
-              ← Atrás
             </button>
           </div>
         )}
@@ -209,12 +172,9 @@ export default function WorkBoard() {
         {stage === 'confirmPin' && (
           <div style={{width:'100%',maxWidth:300,textAlign:'center'}}>
             <p style={{color:'#cbd5e1',marginBottom:20,fontSize:16}}>Confirmá tu PIN</p>
-            <input type="password" maxLength="4" value={pinInput} onChange={(e) => setPinInput(e.target.value)} style={{width:'100%',padding:14,marginBottom:20,borderRadius:8,border:'1px solid #475569',background:'#0f172a',color:'white',fontSize:24,textAlign:'center',letterSpacing:'0.5em'}} />
+            <input type="password" maxLength="4" value={pinInput} onChange={(e) => setPinInput(e.target.value)} style={{width:'100%',padding:14,marginBottom:20,borderRadius:8,border:'1px solid #475569',background:'#0f172a',color:'white',fontSize:24,textAlign:'center'}} />
             <button onClick={handleConfirmPin} style={{width:'100%',padding:12,background:'#22c55e',border:'none',borderRadius:8,color:'white',cursor:'pointer',fontWeight:'bold'}}>
               Confirmar
-            </button>
-            <button onClick={() => {setStage('pin');setPinInput('');}} style={{width:'100%',padding:12,marginTop:10,background:'transparent',border:'1px solid #475569',borderRadius:8,color:'#94a3b8',cursor:'pointer'}}>
-              ← Atrás
             </button>
           </div>
         )}
@@ -222,123 +182,15 @@ export default function WorkBoard() {
     );
   }
 
-  // APP SCREEN
-  const userProjects = projects.filter(p => !p.memberIds || p.memberIds.length === 0 || p.memberIds.includes(currentUser.id));
+  const userProjects = projects.filter(p => !p.memberIds || p.memberIds.includes(currentUser.id));
   const projectTasks = selectedProject ? tasks.filter(t => t.projectId === selectedProject.id) : [];
-
-  // KANBAN VIEW
-  const KanbanView = () => {
-    const columns = [
-      {id: 'todo', name: 'Por hacer'},
-      {id: 'progress', name: 'En progreso'},
-      {id: 'done', name: 'Completado'}
-    ];
-
-    return (
-      <div style={{display:'grid',gridTemplateColumns:'repeat(3, 1fr)',gap:20,marginTop:20}}>
-        {columns.map(col => (
-          <div key={col.id} style={{background:'#1e293b',borderRadius:8,padding:15}}>
-            <h3 style={{marginBottom:15,fontSize:16,fontWeight:'bold'}}>{col.name} ({projectTasks.filter(t => t.column === col.id).length})</h3>
-            <div style={{display:'flex',flexDirection:'column',gap:10}}>
-              {projectTasks.filter(t => t.column === col.id).map(task => (
-                <div key={task.id} onClick={() => setSelectedTask(task)} style={{background:'#0f172a',padding:12,borderRadius:6,cursor:'pointer',borderLeft:`4px solid ${task.priority === 'alta' ? '#ef4444' : task.priority === 'media' ? '#f59e0b' : '#22c55e'}`}}>
-                  <p style={{fontWeight:'bold',fontSize:14,marginBottom:5}}>{task.title}</p>
-                  <p style={{fontSize:12,color:'#94a3b8'}}>💬 {task.comments?.length || 0}</p>
-                </div>
-              ))}
-              <button onClick={() => setShowNewTask(true)} style={{padding:10,background:'rgba(255,255,255,0.05)',border:'1px dashed #475569',borderRadius:6,color:'#94a3b8',cursor:'pointer',fontSize:14,marginTop:5}}>
-                + Agregar tarea
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  };
-
-  // CALENDAR VIEW
-  const CalendarView = () => {
-    const days = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = today.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const daysInMonth = lastDay.getDate();
-    const startingDayOfWeek = firstDay.getDay();
-    
-    const cells = [];
-    for (let i = 0; i < startingDayOfWeek; i++) cells.push(null);
-    for (let i = 1; i <= daysInMonth; i++) cells.push(i);
-
-    return (
-      <div style={{marginTop:20}}>
-        <h3 style={{marginBottom:20,fontSize:18,fontWeight:'bold'}}>{firstDay.toLocaleDateString('es-ES', {month:'long', year:'numeric'})}</h3>
-        <div style={{display:'grid',gridTemplateColumns:'repeat(7, 1fr)',gap:10}}>
-          {days.map(day => <div key={day} style={{textAlign:'center',fontWeight:'bold',color:'#94a3b8',marginBottom:10}}>{day}</div>)}
-          {cells.map((day, idx) => (
-            <div key={idx} style={{background:day ? '#1e293b' : 'transparent',padding:10,borderRadius:6,minHeight:80,display:'flex',flexDirection:'column'}}>
-              {day && <p style={{fontWeight:'bold',marginBottom:8}}>{day}</p>}
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
-  // TASK MODAL
-  const TaskModal = () => {
-    if (!selectedTask) return null;
-
-    return (
-      <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'rgba(0,0,0,0.7)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:1000}}>
-        <div style={{background:'#1e293b',borderRadius:12,padding:30,maxWidth:600,width:'90%',maxHeight:'80vh',overflowY:'auto'}}>
-          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20}}>
-            <h2 style={{fontSize:20,fontWeight:'bold'}}>{selectedTask.title}</h2>
-            <button onClick={() => setSelectedTask(null)} style={{background:'none',border:'none',color:'#94a3b8',cursor:'pointer',fontSize:24}}>✕</button>
-          </div>
-
-          <div style={{background:'#0f172a',padding:15,borderRadius:8,marginBottom:20}}>
-            <h3 style={{marginBottom:10,fontWeight:'bold'}}>💬 Comentarios</h3>
-            {selectedTask.comments?.map(c => (
-              <div key={c.id} style={{background:'#1e293b',padding:10,borderRadius:6,marginBottom:10}}>
-                <p style={{fontSize:12,color:'#94a3b8'}}><strong>{c.authorName}</strong></p>
-                <p style={{marginTop:5}}>{c.text}</p>
-              </div>
-            ))}
-            <div style={{display:'flex',gap:10,marginTop:10}}>
-              <input type="text" placeholder="Agregar comentario..." value={commentText} onChange={(e) => setCommentText(e.target.value)} style={{flex:1,padding:10,borderRadius:6,border:'1px solid #475569',background:'#0f172a',color:'white'}} 
-                onKeyPress={(e) => {
-                  if(e.key === 'Enter' && commentText) {
-                    addComment(selectedTask.id, commentText);
-                    setCommentText('');
-                  }
-                }}
-              />
-            </div>
-          </div>
-
-          <div style={{display:'flex',gap:10}}>
-            <button onClick={() => deleteTask(selectedTask.id)} style={{flex:1,padding:10,background:'#ef4444',border:'none',borderRadius:6,color:'white',cursor:'pointer',fontWeight:'bold'}}>
-              Eliminar
-            </button>
-            <button onClick={() => setSelectedTask(null)} style={{flex:1,padding:10,background:'#475569',border:'none',borderRadius:6,color:'white',cursor:'pointer',fontWeight:'bold'}}>
-              Cerrar
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
 
   return (
     <div style={{display:'flex',height:'100vh',background:'#0f172a',color:'white'}}>
-      {/* SIDEBAR */}
       <div style={{width:280,background:'#1e293b',padding:20,borderRight:'1px solid rgba(255,255,255,0.1)',overflowY:'auto'}}>
         <h2 style={{marginBottom:20,fontSize:18,fontWeight:'bold'}}>📋 WorkBoard</h2>
         <div style={{marginBottom:20,padding:12,background:'rgba(255,255,255,0.05)',borderRadius:8}}>
-          <p style={{fontSize:12,color:'#94a3b8'}}>Conectado</p>
-          <p style={{fontWeight:'bold',marginTop:5,fontSize:16}}>{currentUser.name}</p>
+          <p style={{fontSize:12,color:'#94a3b8'}}>Conectado: {currentUser.name}</p>
         </div>
         <button onClick={() => {setCurrentUser(null);setPin('');setPinInput('');setStage('selectUser');}} style={{width:'100%',padding:10,background:'#ef4444',border:'none',borderRadius:6,color:'white',cursor:'pointer',fontWeight:'bold',marginBottom:20}}>
           Cerrar sesión
@@ -347,7 +199,7 @@ export default function WorkBoard() {
           + Nuevo Proyecto
         </button>
 
-        <h3 style={{fontSize:13,fontWeight:'bold',marginTop:20,marginBottom:10,color:'#94a3b8',textTransform:'uppercase'}}>Mis Proyectos ({userProjects.length})</h3>
+        <h3 style={{fontSize:13,fontWeight:'bold',marginTop:20,marginBottom:10,color:'#94a3b8'}}>Mis Proyectos</h3>
         {userProjects.map(p => (
           <div key={p.id} onClick={() => {setSelectedProject(p);setView('kanban');setSelectedTask(null);}} style={{padding:10,background:selectedProject?.id === p.id ? 'rgba(59, 130, 246, 0.2)' : 'rgba(255,255,255,0.05)',borderRadius:6,marginBottom:8,cursor:'pointer',borderLeft:`4px solid ${p.color}`}}>
             <p style={{fontWeight:'bold',fontSize:13}}>{p.name}</p>
@@ -356,43 +208,68 @@ export default function WorkBoard() {
         ))}
       </div>
 
-      {/* MAIN */}
       <div style={{flex:1,padding:30,overflowY:'auto'}}>
         {!selectedProject ? (
-          <>
-            <h1>👋 Bienvenido, {currentUser.name}!</h1>
-            <p style={{color:'#cbd5e1',marginTop:10}}>✅ Datos sincronizados en tiempo real</p>
-          </>
+          <h1>👋 Bienvenido, {currentUser.name}!</h1>
         ) : (
           <>
-            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:30}}>
-              <h1>{selectedProject.name}</h1>
-              <button onClick={() => setSelectedProject(null)} style={{padding:'8px 16px',background:'#475569',border:'none',borderRadius:6,color:'white',cursor:'pointer'}}>
-                ← Volver
-              </button>
-            </div>
-
-            <div style={{display:'flex',gap:10,marginBottom:20}}>
-              {[
-                {id:'kanban', name:'⊞ Tablero'},
-                {id:'calendar', name:'📅 Calendario'}
-              ].map(v => (
-                <button key={v.id} onClick={() => setView(v.id)} style={{padding:'10px 20px',background:view === v.id ? '#3b82f6' : '#475569',border:'none',borderRadius:6,color:'white',cursor:'pointer',fontWeight:'bold'}}>
-                  {v.name}
-                </button>
+            <h1>{selectedProject.name}</h1>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(3, 1fr)',gap:20,marginTop:20}}>
+              {['todo','progress','done'].map(col => (
+                <div key={col} style={{background:'#1e293b',borderRadius:8,padding:15}}>
+                  <h3 style={{marginBottom:15}}>
+                    {col === 'todo' ? 'Por hacer' : col === 'progress' ? 'En progreso' : 'Completado'} ({projectTasks.filter(t => t.column === col).length})
+                  </h3>
+                  {projectTasks.filter(t => t.column === col).map(task => (
+                    <div key={task.id} onClick={() => setSelectedTask(task)} style={{background:'#0f172a',padding:12,borderRadius:6,marginBottom:10,cursor:'pointer'}}>
+                      <p style={{fontWeight:'bold',marginBottom:5}}>{task.title}</p>
+                      <p style={{fontSize:12,color:'#94a3b8'}}>💬 {task.comments?.length || 0}</p>
+                    </div>
+                  ))}
+                  <button onClick={createTask} style={{width:'100%',padding:10,background:'rgba(255,255,255,0.05)',border:'1px dashed #475569',borderRadius:6,color:'#94a3b8',cursor:'pointer',marginTop:10}}>
+                    + Tarea
+                  </button>
+                </div>
               ))}
             </div>
-
-            {view === 'kanban' && <KanbanView />}
-            {view === 'calendar' && <CalendarView />}
           </>
+        )}
+
+        {selectedTask && (
+          <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'rgba(0,0,0,0.7)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:1000}}>
+            <div style={{background:'#1e293b',borderRadius:12,padding:30,maxWidth:600,width:'90%'}}>
+              <div style={{display:'flex',justifyContent:'space-between',marginBottom:20}}>
+                <h2>{selectedTask.title}</h2>
+                <button onClick={() => setSelectedTask(null)} style={{background:'none',border:'none',color:'white',cursor:'pointer',fontSize:24}}>✕</button>
+              </div>
+
+              <div style={{background:'#0f172a',padding:15,borderRadius:8,marginBottom:20}}>
+                <h3 style={{marginBottom:10}}>Comentarios</h3>
+                {selectedTask.comments?.map(c => (
+                  <div key={c.id} style={{background:'#1e293b',padding:10,borderRadius:6,marginBottom:10}}>
+                    <p style={{fontSize:12,color:'#94a3b8'}}><strong>{c.author}</strong></p>
+                    <p style={{marginTop:5}}>{c.text}</p>
+                  </div>
+                ))}
+                <div style={{display:'flex',gap:10,marginTop:10}}>
+                  <input type="text" placeholder="Comentar..." value={commentText} onChange={(e) => setCommentText(e.target.value)} style={{flex:1,padding:10,borderRadius:6,border:'1px solid #475569',background:'#0f172a',color:'white'}} 
+                    onKeyPress={(e) => {if(e.key === 'Enter' && commentText) {addComment(selectedTask.id, commentText);setCommentText('');}}}
+                  />
+                </div>
+              </div>
+
+              <button onClick={() => setSelectedTask(null)} style={{width:'100%',padding:10,background:'#475569',border:'none',borderRadius:6,color:'white',cursor:'pointer'}}>
+                Cerrar
+              </button>
+            </div>
+          </div>
         )}
 
         {showNewProject && (
           <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'rgba(0,0,0,0.7)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:1000}}>
             <div style={{background:'#1e293b',borderRadius:12,padding:30,maxWidth:400,width:'90%'}}>
               <h2 style={{marginBottom:20}}>Nuevo Proyecto</h2>
-              <input type="text" placeholder="Nombre del proyecto" value={newProjectName} onChange={(e) => setNewProjectName(e.target.value)} style={{width:'100%',padding:10,marginBottom:15,borderRadius:6,border:'1px solid #475569',background:'#0f172a',color:'white'}} />
+              <input type="text" placeholder="Nombre" value={newProjectName} onChange={(e) => setNewProjectName(e.target.value)} style={{width:'100%',padding:10,marginBottom:15,borderRadius:6,border:'1px solid #475569',background:'#0f172a',color:'white'}} />
               <div style={{display:'flex',gap:10}}>
                 <button onClick={createProject} style={{flex:1,padding:10,background:'#3b82f6',border:'none',borderRadius:6,color:'white',cursor:'pointer',fontWeight:'bold'}}>
                   Crear
@@ -404,25 +281,6 @@ export default function WorkBoard() {
             </div>
           </div>
         )}
-
-        {showNewTask && (
-          <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'rgba(0,0,0,0.7)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:1000}}>
-            <div style={{background:'#1e293b',borderRadius:12,padding:30,maxWidth:400,width:'90%'}}>
-              <h2 style={{marginBottom:20}}>Nueva Tarea</h2>
-              <input type="text" placeholder="Título de la tarea" value={newTaskTitle} onChange={(e) => setNewTaskTitle(e.target.value)} style={{width:'100%',padding:10,marginBottom:15,borderRadius:6,border:'1px solid #475569',background:'#0f172a',color:'white'}} />
-              <div style={{display:'flex',gap:10}}>
-                <button onClick={createTask} style={{flex:1,padding:10,background:'#3b82f6',border:'none',borderRadius:6,color:'white',cursor:'pointer',fontWeight:'bold'}}>
-                  Crear
-                </button>
-                <button onClick={() => setShowNewTask(false)} style={{flex:1,padding:10,background:'#475569',border:'none',borderRadius:6,color:'white',cursor:'pointer'}}>
-                  Cancelar
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        <TaskModal />
       </div>
     </div>
   );
