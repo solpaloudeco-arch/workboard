@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { initializeApp } from 'firebase/app';
-import { getAuth, signInWithPopup, GoogleAuthProvider, signOut } from 'firebase/auth';
-import { getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, setDoc, query, where } from 'firebase/firestore';
+import { getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, setDoc } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: "AIzaSyBZM4_n_EPWnzUPGYf3UMOIEipMYvHRS_U",
@@ -13,12 +12,7 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
 const db = getFirestore(app);
-const provider = new GoogleAuthProvider();
-provider.setCustomParameters({
-  client_id: '212877013133-ct1n9lpl17dd9uu77qn95q6cotv5hios.apps.googleusercontent.com'
-});
 
 const MEMBERS = [
   {id:1,name:"Sol"},{id:2,name:"Dolo"},{id:3,name:"Grace"},{id:4,name:"Caro"},
@@ -29,139 +23,118 @@ const MEMBERS = [
   {id:21,name:"Lourdes"},{id:22,name:"Eze"},{id:23,name:"Nina"},{id:24,name:"Naty"},
   {id:25,name:"Paloma"},{id:26,name:"Tamara"},{id:27,name:"Lara L"},{id:28,name:"Carlos"},
   {id:29,name:"Juan Cruz"},{id:30,name:"Melisa"},{id:31,name:"Cris"},
-  {id:32,name:"P32"},{id:33,name:"P33"},{id:34,name:"P34"},{id:35,name:"P35"},
+  {id:32,name:"Yami"},{id:33,name:"Emi"},{id:34,name:"P34"},{id:35,name:"P35"},
   {id:36,name:"P36"},{id:37,name:"P37"},{id:38,name:"P38"},{id:39,name:"P39"},{id:40,name:"P40"}
 ];
 
-const COLORS = ["#6366f1","#f59e0b","#22c55e","#ef4444","#14b8a6","#8b5cf6","#f97316","#ec4899","#0ea5e9","#84cc16"];
+const COLORS = ["#6366f1","#f59e0b","#22c55e","#ef4444","#14b8a6","#8b5cf6","#f97316","#ec4899","#0ea5e9"];
 
 export default function WorkBoard() {
-  const [user, setUser] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
+  const [pin, setPin] = useState('');
+  const [pinInput, setPinInput] = useState('');
+  const [stage, setStage] = useState('selectUser');
+  const [searchText, setSearchText] = useState('');
   const [projects, setProjects] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [selectedProject, setSelectedProject] = useState(null);
+  const [selectedTask, setSelectedTask] = useState(null);
   const [view, setView] = useState('kanban');
   const [showNewProject, setShowNewProject] = useState(false);
   const [showNewTask, setShowNewTask] = useState(false);
-  const [selectedTask, setSelectedTask] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [newProjectName, setNewProjectName] = useState('');
+  const [newTaskTitle, setNewTaskTitle] = useState('');
 
-  // Auth
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(async (u) => {
-      if (u) {
-        setUser(u);
-        const userRef = doc(db, 'users', u.uid);
-        const userData = { email: u.email, name: u.displayName, uid: u.uid, photoURL: u.photoURL, updatedAt: new Date() };
-        await setDoc(userRef, userData, { merge: true });
-        setCurrentUser(userData);
-      } else {
-        setUser(null);
-        setCurrentUser(null);
-      }
-      setLoading(false);
+    const unsubscribe = onSnapshot(collection(db, 'projects'), (snapshot) => {
+      setProjects(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
     });
     return unsubscribe;
   }, []);
 
-  // Projects listener
   useEffect(() => {
-    if (!user) return;
-    const unsubscribe = onSnapshot(collection(db, 'projects'), (snapshot) => {
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setProjects(data);
-    });
-    return unsubscribe;
-  }, [user]);
-
-  // Tasks listener
-  useEffect(() => {
-    if (!user) return;
     const unsubscribe = onSnapshot(collection(db, 'tasks'), (snapshot) => {
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setTasks(data);
+      setTasks(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
     });
     return unsubscribe;
-  }, [user]);
+  }, []);
 
-  const handleLogin = async () => {
-    try {
-      await signInWithPopup(auth, provider);
-    } catch (error) {
-      console.error('Error:', error);
+  const handleSelectUser = (member) => {
+    setCurrentUser(member);
+    setStage('pin');
+    setPinInput('');
+  };
+
+  const handleCreatePin = () => {
+    if (pinInput.length === 4) {
+      setPin(pinInput);
+      setStage('confirmPin');
+      setPinInput('');
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-    } catch (error) {
-      console.error('Error:', error);
+  const handleConfirmPin = () => {
+    if (pinInput === pin) {
+      setStage('app');
+    } else {
+      alert('PIN no coincide');
+      setPinInput('');
     }
   };
 
-  const createProject = async (name, description, color, memberIds) => {
-    try {
-      setSaving(true);
-      await addDoc(collection(db, 'projects'), {
-        name,
-        description,
-        color,
-        memberIds,
-        createdBy: currentUser.uid,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      });
-      setShowNewProject(false);
-      setSaving(false);
-    } catch (error) {
-      console.error('Error:', error);
-      setSaving(false);
+  const handleLogin = () => {
+    if (pinInput.length === 4) {
+      setStage('app');
+    } else {
+      alert('PIN debe tener 4 dígitos');
     }
   };
 
-  const createTask = async (projectId, title, description, assigneeId, priority, dueDate) => {
-    try {
-      setSaving(true);
-      await addDoc(collection(db, 'tasks'), {
-        projectId,
-        title,
-        description,
-        assigneeId,
-        priority: priority || 'media',
-        dueDate,
-        column: 'todo',
-        comments: [],
-        links: [],
-        createdBy: currentUser.uid,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      });
-      setShowNewTask(false);
-      setSaving(false);
-    } catch (error) {
-      console.error('Error:', error);
-      setSaving(false);
+  const createProject = async () => {
+    if (newProjectName.trim()) {
+      try {
+        const colorIdx = projects.length % COLORS.length;
+        await addDoc(collection(db, 'projects'), {
+          name: newProjectName,
+          description: '',
+          color: COLORS[colorIdx],
+          createdBy: currentUser.id,
+          createdAt: new Date(),
+          memberIds: [currentUser.id]
+        });
+        setNewProjectName('');
+        setShowNewProject(false);
+      } catch (error) {
+        console.error('Error:', error);
+      }
     }
   };
 
-  const updateTask = async (taskId, updates) => {
-    try {
-      setSaving(true);
-      await updateDoc(doc(db, 'tasks', taskId), { ...updates, updatedAt: new Date() });
-      setSaving(false);
-    } catch (error) {
-      console.error('Error:', error);
-      setSaving(false);
+  const createTask = async () => {
+    if (newTaskTitle.trim() && selectedProject) {
+      try {
+        await addDoc(collection(db, 'tasks'), {
+          projectId: selectedProject.id,
+          title: newTaskTitle,
+          description: '',
+          assigneeId: currentUser.id,
+          priority: 'media',
+          column: 'todo',
+          comments: [],
+          createdBy: currentUser.id,
+          createdAt: new Date()
+        });
+        setNewTaskTitle('');
+        setShowNewTask(false);
+      } catch (error) {
+        console.error('Error:', error);
+      }
     }
   };
 
-  const deleteTask = async (taskId) => {
+  const updateTaskColumn = async (taskId, newColumn) => {
     try {
-      await deleteDoc(doc(db, 'tasks', taskId));
-      setSelectedTask(null);
+      await updateDoc(doc(db, 'tasks', taskId), { column: newColumn });
     } catch (error) {
       console.error('Error:', error);
     }
@@ -174,52 +147,105 @@ export default function WorkBoard() {
         const newComment = {
           id: Date.now(),
           text,
-          authorId: currentUser.uid,
+          authorId: currentUser.id,
           authorName: currentUser.name,
-          createdAt: new Date()
+          createdAt: new Date().toISOString()
         };
-        await updateTask(taskId, { comments: [...(task.comments || []), newComment] });
+        await updateDoc(doc(db, 'tasks', taskId), {
+          comments: [...(task.comments || []), newComment]
+        });
       }
     } catch (error) {
       console.error('Error:', error);
     }
   };
 
-  if (loading) return <div style={{display:'flex',justifyContent:'center',alignItems:'center',height:'100vh',background:'#0f172a',color:'white',fontSize:18}}>Cargando...</div>;
+  const deleteTask = async (taskId) => {
+    try {
+      await deleteDoc(doc(db, 'tasks', taskId));
+      setSelectedTask(null);
+    } catch (error) {
+      console.error('Error:', error);
+    }
+  };
 
-  if (!user) {
+  // LOGIN SCREEN
+  if (!currentUser) {
+    const filteredMembers = MEMBERS.filter(m => m.name.toLowerCase().includes(searchText.toLowerCase()));
+
     return (
-      <div style={{display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'center',height:'100vh',background:'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',textAlign:'center'}}>
-        <h1 style={{color:'white',marginBottom:20,fontSize:40}}>📋 WorkBoard</h1>
-        <p style={{color:'#cbd5e1',marginBottom:40,fontSize:16}}>Gestor de Proyectos en Tiempo Real</p>
-        <button onClick={handleLogin} style={{padding:'15px 40px',fontSize:16,background:'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',color:'white',border:'none',borderRadius:8,cursor:'pointer',fontWeight:'bold',boxShadow:'0 10px 25px rgba(0,0,0,0.3)'}}>
-          🔐 Iniciar sesión con Google
-        </button>
+      <div style={{display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'center',height:'100vh',background:'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',padding:20}}>
+        <h1 style={{color:'white',marginBottom:10,fontSize:40}}>📋 WorkBoard</h1>
+        <p style={{color:'#cbd5e1',marginBottom:30}}>Sol Palou Deco</p>
+        
+        {stage === 'selectUser' && (
+          <div style={{width:'100%',maxWidth:500}}>
+            <input type="text" placeholder="Buscar nombre..." value={searchText} onChange={(e) => setSearchText(e.target.value)} style={{width:'100%',padding:12,marginBottom:20,borderRadius:8,border:'1px solid #475569',background:'#0f172a',color:'white',fontSize:16}} />
+            <div style={{maxHeight:400,overflowY:'auto',display:'grid',gridTemplateColumns:'repeat(auto-fit, minmax(120px, 1fr))',gap:10}}>
+              {filteredMembers.map(m => (
+                <button key={m.id} onClick={() => handleSelectUser(m)} style={{padding:12,background:'#1e293b',border:'1px solid #475569',borderRadius:8,color:'white',cursor:'pointer',fontWeight:'bold',fontSize:14,transition:'all 0.2s'}}>
+                  {m.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {stage === 'pin' && (
+          <div style={{width:'100%',maxWidth:300,textAlign:'center'}}>
+            <p style={{color:'#cbd5e1',marginBottom:20,fontSize:16}}>Creá tu PIN de 4 dígitos</p>
+            <p style={{color:'#94a3b8',marginBottom:20}}{currentUser.name}</p>
+            <input type="password" maxLength="4" value={pinInput} onChange={(e) => setPinInput(e.target.value)} style={{width:'100%',padding:14,marginBottom:20,borderRadius:8,border:'1px solid #475569',background:'#0f172a',color:'white',fontSize:24,textAlign:'center',letterSpacing:'0.5em'}} />
+            <button onClick={handleCreatePin} disabled={pinInput.length !== 4} style={{width:'100%',padding:12,background:pinInput.length === 4 ? '#3b82f6' : '#475569',border:'none',borderRadius:8,color:'white',cursor:pinInput.length === 4 ? 'pointer' : 'not-allowed',fontWeight:'bold'}}>
+              Siguiente
+            </button>
+            <button onClick={() => {setCurrentUser(null);setPinInput('');}} style={{width:'100%',padding:12,marginTop:10,background:'transparent',border:'1px solid #475569',borderRadius:8,color:'#94a3b8',cursor:'pointer'}}>
+              ← Atrás
+            </button>
+          </div>
+        )}
+
+        {stage === 'confirmPin' && (
+          <div style={{width:'100%',maxWidth:300,textAlign:'center'}}>
+            <p style={{color:'#cbd5e1',marginBottom:20,fontSize:16}}>Confirmá tu PIN</p>
+            <input type="password" maxLength="4" value={pinInput} onChange={(e) => setPinInput(e.target.value)} style={{width:'100%',padding:14,marginBottom:20,borderRadius:8,border:'1px solid #475569',background:'#0f172a',color:'white',fontSize:24,textAlign:'center',letterSpacing:'0.5em'}} />
+            <button onClick={handleConfirmPin} style={{width:'100%',padding:12,background:'#22c55e',border:'none',borderRadius:8,color:'white',cursor:'pointer',fontWeight:'bold'}}>
+              Confirmar
+            </button>
+            <button onClick={() => {setStage('pin');setPinInput('');}} style={{width:'100%',padding:12,marginTop:10,background:'transparent',border:'1px solid #475569',borderRadius:8,color:'#94a3b8',cursor:'pointer'}}>
+              ← Atrás
+            </button>
+          </div>
+        )}
       </div>
     );
   }
 
-  const userProjects = projects.filter(p => !p.memberIds || p.memberIds.length === 0 || p.memberIds.includes(currentUser.uid));
+  // APP SCREEN
+  const userProjects = projects.filter(p => !p.memberIds || p.memberIds.length === 0 || p.memberIds.includes(currentUser.id));
   const projectTasks = selectedProject ? tasks.filter(t => t.projectId === selectedProject.id) : [];
 
-  // Kanban View
+  // KANBAN VIEW
   const KanbanView = () => {
-    const columns = ['todo', 'progress', 'done'];
-    const columnNames = { todo: 'Por hacer', progress: 'En progreso', done: 'Completado' };
-    
+    const columns = [
+      {id: 'todo', name: 'Por hacer'},
+      {id: 'progress', name: 'En progreso'},
+      {id: 'done', name: 'Completado'}
+    ];
+
     return (
       <div style={{display:'grid',gridTemplateColumns:'repeat(3, 1fr)',gap:20,marginTop:20}}>
         {columns.map(col => (
-          <div key={col} style={{background:'#1e293b',borderRadius:8,padding:15}}>
-            <h3 style={{marginBottom:15,fontSize:16,fontWeight:'bold'}}>{columnNames[col]} ({projectTasks.filter(t => t.column === col).length})</h3>
+          <div key={col.id} style={{background:'#1e293b',borderRadius:8,padding:15}}>
+            <h3 style={{marginBottom:15,fontSize:16,fontWeight:'bold'}}>{col.name} ({projectTasks.filter(t => t.column === col.id).length})</h3>
             <div style={{display:'flex',flexDirection:'column',gap:10}}>
-              {projectTasks.filter(t => t.column === col).map(task => (
+              {projectTasks.filter(t => t.column === col.id).map(task => (
                 <div key={task.id} onClick={() => setSelectedTask(task)} style={{background:'#0f172a',padding:12,borderRadius:6,cursor:'pointer',borderLeft:`4px solid ${task.priority === 'alta' ? '#ef4444' : task.priority === 'media' ? '#f59e0b' : '#22c55e'}`}}>
                   <p style={{fontWeight:'bold',fontSize:14,marginBottom:5}}>{task.title}</p>
-                  <p style={{fontSize:12,color:'#94a3b8'}}>{task.comments?.length || 0} comentarios</p>
+                  <p style={{fontSize:12,color:'#94a3b8'}}>💬 {task.comments?.length || 0}</p>
                 </div>
               ))}
-              <button onClick={() => setShowNewTask(true)} style={{padding:10,background:'rgba(255,255,255,0.05)',border:'1px dashed #475569',borderRadius:6,color:'#94a3b8',cursor:'pointer',fontSize:14}}>
+              <button onClick={() => setShowNewTask(true)} style={{padding:10,background:'rgba(255,255,255,0.05)',border:'1px dashed #475569',borderRadius:6,color:'#94a3b8',cursor:'pointer',fontSize:14,marginTop:5}}>
                 + Agregar tarea
               </button>
             </div>
@@ -229,7 +255,7 @@ export default function WorkBoard() {
     );
   };
 
-  // Calendar View
+  // CALENDAR VIEW
   const CalendarView = () => {
     const days = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
     const today = new Date();
@@ -250,16 +276,8 @@ export default function WorkBoard() {
         <div style={{display:'grid',gridTemplateColumns:'repeat(7, 1fr)',gap:10}}>
           {days.map(day => <div key={day} style={{textAlign:'center',fontWeight:'bold',color:'#94a3b8',marginBottom:10}}>{day}</div>)}
           {cells.map((day, idx) => (
-            <div key={idx} style={{background:day ? '#1e293b' : 'transparent',padding:10,borderRadius:6,minHeight:80,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center'}}>
+            <div key={idx} style={{background:day ? '#1e293b' : 'transparent',padding:10,borderRadius:6,minHeight:80,display:'flex',flexDirection:'column'}}>
               {day && <p style={{fontWeight:'bold',marginBottom:8}}>{day}</p>}
-              {day && projectTasks.filter(t => {
-                const taskDate = t.dueDate ? new Date(t.dueDate).getDate() : null;
-                return taskDate === day;
-              }).map(task => (
-                <p key={task.id} style={{fontSize:11,background:'rgba(59, 130, 246, 0.2)',padding:2,borderRadius:3,marginBottom:2,width:'100%',textAlign:'center',cursor:'pointer'}} onClick={() => setSelectedTask(task)}>
-                  {task.title.substring(0,8)}...
-                </p>
-              ))}
             </div>
           ))}
         </div>
@@ -267,10 +285,11 @@ export default function WorkBoard() {
     );
   };
 
-  // Task Modal
+  // TASK MODAL
   const TaskModal = () => {
     if (!selectedTask) return null;
-    
+    const [commentText, setCommentText] = useState('');
+
     return (
       <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'rgba(0,0,0,0.7)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:1000}}>
         <div style={{background:'#1e293b',borderRadius:12,padding:30,maxWidth:600,width:'90%',maxHeight:'80vh',overflowY:'auto'}}>
@@ -279,24 +298,24 @@ export default function WorkBoard() {
             <button onClick={() => setSelectedTask(null)} style={{background:'none',border:'none',color:'#94a3b8',cursor:'pointer',fontSize:24}}>✕</button>
           </div>
 
-          <p style={{color:'#cbd5e1',marginBottom:15}}>{selectedTask.description}</p>
-
           <div style={{background:'#0f172a',padding:15,borderRadius:8,marginBottom:20}}>
-            <h3 style={{marginBottom:10,fontWeight:'bold'}}>Comentarios</h3>
+            <h3 style={{marginBottom:10,fontWeight:'bold'}}>💬 Comentarios</h3>
             {selectedTask.comments?.map(c => (
               <div key={c.id} style={{background:'#1e293b',padding:10,borderRadius:6,marginBottom:10}}>
-                <p style={{fontSize:12,color:'#94a3b8'}}><strong>{c.authorName}</strong> • {new Date(c.createdAt).toLocaleDateString('es-ES')}</p>
+                <p style={{fontSize:12,color:'#94a3b8'}}><strong>{c.authorName}</strong></p>
                 <p style={{marginTop:5}}>{c.text}</p>
               </div>
             ))}
-            <input type="text" placeholder="Agregar comentario..." style={{width:'100%',padding:10,borderRadius:6,border:'1px solid #475569',background:'#0f172a',color:'white',marginTop:10}} 
-              onKeyPress={(e) => {
-                if(e.key === 'Enter' && e.target.value) {
-                  addComment(selectedTask.id, e.target.value);
-                  e.target.value = '';
-                }
-              }}
-            />
+            <div style={{display:'flex',gap:10,marginTop:10}}>
+              <input type="text" placeholder="Agregar comentario..." value={commentText} onChange={(e) => setCommentText(e.target.value)} style={{flex:1,padding:10,borderRadius:6,border:'1px solid #475569',background:'#0f172a',color:'white'}} 
+                onKeyPress={(e) => {
+                  if(e.key === 'Enter' && commentText) {
+                    addComment(selectedTask.id, commentText);
+                    setCommentText('');
+                  }
+                }}
+              />
+            </div>
           </div>
 
           <div style={{display:'flex',gap:10}}>
@@ -314,14 +333,14 @@ export default function WorkBoard() {
 
   return (
     <div style={{display:'flex',height:'100vh',background:'#0f172a',color:'white'}}>
-      {/* Sidebar */}
+      {/* SIDEBAR */}
       <div style={{width:280,background:'#1e293b',padding:20,borderRight:'1px solid rgba(255,255,255,0.1)',overflowY:'auto'}}>
         <h2 style={{marginBottom:20,fontSize:18,fontWeight:'bold'}}>📋 WorkBoard</h2>
         <div style={{marginBottom:20,padding:12,background:'rgba(255,255,255,0.05)',borderRadius:8}}>
           <p style={{fontSize:12,color:'#94a3b8'}}>Conectado</p>
-          <p style={{fontWeight:'bold',marginTop:5}}>{currentUser?.name}</p>
+          <p style={{fontWeight:'bold',marginTop:5,fontSize:16}}>{currentUser.name}</p>
         </div>
-        <button onClick={handleLogout} style={{width:'100%',padding:10,background:'#ef4444',border:'none',borderRadius:6,color:'white',cursor:'pointer',fontWeight:'bold',marginBottom:20}}>
+        <button onClick={() => {setCurrentUser(null);setPin('');setPinInput('');setStage('selectUser');}} style={{width:'100%',padding:10,background:'#ef4444',border:'none',borderRadius:6,color:'white',cursor:'pointer',fontWeight:'bold',marginBottom:20}}>
           Cerrar sesión
         </button>
         <button onClick={() => setShowNewProject(true)} style={{width:'100%',padding:10,background:'#3b82f6',border:'none',borderRadius:6,color:'white',cursor:'pointer',fontWeight:'bold',marginBottom:20}}>
@@ -330,27 +349,19 @@ export default function WorkBoard() {
 
         <h3 style={{fontSize:13,fontWeight:'bold',marginTop:20,marginBottom:10,color:'#94a3b8',textTransform:'uppercase'}}>Mis Proyectos ({userProjects.length})</h3>
         {userProjects.map(p => (
-          <div key={p.id} onClick={() => {setSelectedProject(p);setSelectedTask(null);}} style={{padding:10,background:selectedProject?.id === p.id ? 'rgba(59, 130, 246, 0.2)' : 'rgba(255,255,255,0.05)',borderRadius:6,marginBottom:8,cursor:'pointer',borderLeft:`4px solid ${p.color}`}}>
+          <div key={p.id} onClick={() => {setSelectedProject(p);setView('kanban');setSelectedTask(null);}} style={{padding:10,background:selectedProject?.id === p.id ? 'rgba(59, 130, 246, 0.2)' : 'rgba(255,255,255,0.05)',borderRadius:6,marginBottom:8,cursor:'pointer',borderLeft:`4px solid ${p.color}`}}>
             <p style={{fontWeight:'bold',fontSize:13}}>{p.name}</p>
             <p style={{fontSize:11,color:'#94a3b8',marginTop:4}}>{tasks.filter(t => t.projectId === p.id).length} tareas</p>
           </div>
         ))}
       </div>
 
-      {/* Main Content */}
+      {/* MAIN */}
       <div style={{flex:1,padding:30,overflowY:'auto'}}>
         {!selectedProject ? (
           <>
-            <h1 style={{marginBottom:30}}>👋 Bienvenido, {currentUser?.name}!</h1>
-            <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit, minmax(200px, 1fr))',gap:20}}>
-              {userProjects.map(p => (
-                <div key={p.id} onClick={() => setSelectedProject(p)} style={{background:'#1e293b',padding:20,borderRadius:8,borderLeft:`6px solid ${p.color}`,cursor:'pointer',transition:'all 0.3s'}}>
-                  <h3 style={{marginBottom:10,fontWeight:'bold'}}>{p.name}</h3>
-                  <p style={{fontSize:13,color:'#cbd5e1',marginBottom:10}}>{p.description}</p>
-                  <p style={{fontSize:12,color:'#64748b'}}>📌 {tasks.filter(t => t.projectId === p.id).length} tareas</p>
-                </div>
-              ))}
-            </div>
+            <h1>👋 Bienvenido, {currentUser.name}!</h1>
+            <p style={{color:'#cbd5e1',marginTop:10}}>✅ Datos sincronizados en tiempo real</p>
           </>
         ) : (
           <>
@@ -362,9 +373,12 @@ export default function WorkBoard() {
             </div>
 
             <div style={{display:'flex',gap:10,marginBottom:20}}>
-              {['kanban', 'calendar'].map(v => (
-                <button key={v} onClick={() => setView(v)} style={{padding:'10px 20px',background:view === v ? '#3b82f6' : '#475569',border:'none',borderRadius:6,color:'white',cursor:'pointer',fontWeight:'bold'}}>
-                  {v === 'kanban' ? '⊞ Tablero' : '📅 Calendario'}
+              {[
+                {id:'kanban', name:'⊞ Tablero'},
+                {id:'calendar', name:'📅 Calendario'}
+              ].map(v => (
+                <button key={v.id} onClick={() => setView(v.id)} style={{padding:'10px 20px',background:view === v.id ? '#3b82f6' : '#475569',border:'none',borderRadius:6,color:'white',cursor:'pointer',fontWeight:'bold'}}>
+                  {v.name}
                 </button>
               ))}
             </div>
@@ -375,8 +389,6 @@ export default function WorkBoard() {
         )}
 
         <TaskModal />
-
-        {saving && <p style={{position:'fixed',bottom:20,right:20,background:'#3b82f6',padding:'10px 20px',borderRadius:6}}>💾 Guardando...</p>}
       </div>
     </div>
   );
