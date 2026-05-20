@@ -23,8 +23,8 @@ const MEMBERS = [
   {id:21,name:"Lourdes"},{id:22,name:"Eze"},{id:23,name:"Nina"},{id:24,name:"Naty"},
   {id:25,name:"Paloma"},{id:26,name:"Tamara"},{id:27,name:"Lara L"},{id:28,name:"Carlos"},
   {id:29,name:"Juan Cruz"},{id:30,name:"Melisa"},{id:31,name:"Cris"},
-  {id:32,name:"Yami"},{id:33,name:"Emi"},{id:34,name:"P34"},{id:35,name:"P35"},
-  {id:36,name:"P36"},{id:37,name:"P37"},{id:38,name:"P38"},{id:39,name:"P39"},{id:40,name:"P40"}
+  {id:32,name:"P32"},{id:33,name:"P33"},{id:34,name:"P34"},{id:35,name:"P35"},
+  {id:36,name:"P36"},{id:37,name:"P37"},{id:38,name:"P38"},{id:39,name:"Emi"},{id:40,name:"Yami"}
 ];
 
 const COLORS = ["#6366f1","#f59e0b","#22c55e","#ef4444","#14b8a6","#8b5cf6","#f97316","#ec4899","#0ea5e9"];
@@ -261,4 +261,169 @@ export default function WorkBoard() {
     const days = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
     const today = new Date();
     const year = today.getFullYear();
-    const month = t
+    const month = today.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const startingDayOfWeek = firstDay.getDay();
+    
+    const cells = [];
+    for (let i = 0; i < startingDayOfWeek; i++) cells.push(null);
+    for (let i = 1; i <= daysInMonth; i++) cells.push(i);
+
+    return (
+      <div style={{marginTop:20}}>
+        <h3 style={{marginBottom:20,fontSize:18,fontWeight:'bold'}}>{firstDay.toLocaleDateString('es-ES', {month:'long', year:'numeric'})}</h3>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(7, 1fr)',gap:10}}>
+          {days.map(day => <div key={day} style={{textAlign:'center',fontWeight:'bold',color:'#94a3b8',marginBottom:10}}>{day}</div>)}
+          {cells.map((day, idx) => (
+            <div key={idx} style={{background:day ? '#1e293b' : 'transparent',padding:10,borderRadius:6,minHeight:80,display:'flex',flexDirection:'column'}}>
+              {day && <p style={{fontWeight:'bold',marginBottom:8}}>{day}</p>}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  // TASK MODAL
+  const TaskModal = () => {
+    if (!selectedTask) return null;
+
+    return (
+      <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'rgba(0,0,0,0.7)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:1000}}>
+        <div style={{background:'#1e293b',borderRadius:12,padding:30,maxWidth:600,width:'90%',maxHeight:'80vh',overflowY:'auto'}}>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20}}>
+            <h2 style={{fontSize:20,fontWeight:'bold'}}>{selectedTask.title}</h2>
+            <button onClick={() => setSelectedTask(null)} style={{background:'none',border:'none',color:'#94a3b8',cursor:'pointer',fontSize:24}}>✕</button>
+          </div>
+
+          <div style={{background:'#0f172a',padding:15,borderRadius:8,marginBottom:20}}>
+            <h3 style={{marginBottom:10,fontWeight:'bold'}}>💬 Comentarios</h3>
+            {selectedTask.comments?.map(c => (
+              <div key={c.id} style={{background:'#1e293b',padding:10,borderRadius:6,marginBottom:10}}>
+                <p style={{fontSize:12,color:'#94a3b8'}}><strong>{c.authorName}</strong></p>
+                <p style={{marginTop:5}}>{c.text}</p>
+              </div>
+            ))}
+            <div style={{display:'flex',gap:10,marginTop:10}}>
+              <input type="text" placeholder="Agregar comentario..." value={commentText} onChange={(e) => setCommentText(e.target.value)} style={{flex:1,padding:10,borderRadius:6,border:'1px solid #475569',background:'#0f172a',color:'white'}} 
+                onKeyPress={(e) => {
+                  if(e.key === 'Enter' && commentText) {
+                    addComment(selectedTask.id, commentText);
+                    setCommentText('');
+                  }
+                }}
+              />
+            </div>
+          </div>
+
+          <div style={{display:'flex',gap:10}}>
+            <button onClick={() => deleteTask(selectedTask.id)} style={{flex:1,padding:10,background:'#ef4444',border:'none',borderRadius:6,color:'white',cursor:'pointer',fontWeight:'bold'}}>
+              Eliminar
+            </button>
+            <button onClick={() => setSelectedTask(null)} style={{flex:1,padding:10,background:'#475569',border:'none',borderRadius:6,color:'white',cursor:'pointer',fontWeight:'bold'}}>
+              Cerrar
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div style={{display:'flex',height:'100vh',background:'#0f172a',color:'white'}}>
+      {/* SIDEBAR */}
+      <div style={{width:280,background:'#1e293b',padding:20,borderRight:'1px solid rgba(255,255,255,0.1)',overflowY:'auto'}}>
+        <h2 style={{marginBottom:20,fontSize:18,fontWeight:'bold'}}>📋 WorkBoard</h2>
+        <div style={{marginBottom:20,padding:12,background:'rgba(255,255,255,0.05)',borderRadius:8}}>
+          <p style={{fontSize:12,color:'#94a3b8'}}>Conectado</p>
+          <p style={{fontWeight:'bold',marginTop:5,fontSize:16}}>{currentUser.name}</p>
+        </div>
+        <button onClick={() => {setCurrentUser(null);setPin('');setPinInput('');setStage('selectUser');}} style={{width:'100%',padding:10,background:'#ef4444',border:'none',borderRadius:6,color:'white',cursor:'pointer',fontWeight:'bold',marginBottom:20}}>
+          Cerrar sesión
+        </button>
+        <button onClick={() => setShowNewProject(true)} style={{width:'100%',padding:10,background:'#3b82f6',border:'none',borderRadius:6,color:'white',cursor:'pointer',fontWeight:'bold',marginBottom:20}}>
+          + Nuevo Proyecto
+        </button>
+
+        <h3 style={{fontSize:13,fontWeight:'bold',marginTop:20,marginBottom:10,color:'#94a3b8',textTransform:'uppercase'}}>Mis Proyectos ({userProjects.length})</h3>
+        {userProjects.map(p => (
+          <div key={p.id} onClick={() => {setSelectedProject(p);setView('kanban');setSelectedTask(null);}} style={{padding:10,background:selectedProject?.id === p.id ? 'rgba(59, 130, 246, 0.2)' : 'rgba(255,255,255,0.05)',borderRadius:6,marginBottom:8,cursor:'pointer',borderLeft:`4px solid ${p.color}`}}>
+            <p style={{fontWeight:'bold',fontSize:13}}>{p.name}</p>
+            <p style={{fontSize:11,color:'#94a3b8',marginTop:4}}>{tasks.filter(t => t.projectId === p.id).length} tareas</p>
+          </div>
+        ))}
+      </div>
+
+      {/* MAIN */}
+      <div style={{flex:1,padding:30,overflowY:'auto'}}>
+        {!selectedProject ? (
+          <>
+            <h1>👋 Bienvenido, {currentUser.name}!</h1>
+            <p style={{color:'#cbd5e1',marginTop:10}}>✅ Datos sincronizados en tiempo real</p>
+          </>
+        ) : (
+          <>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:30}}>
+              <h1>{selectedProject.name}</h1>
+              <button onClick={() => setSelectedProject(null)} style={{padding:'8px 16px',background:'#475569',border:'none',borderRadius:6,color:'white',cursor:'pointer'}}>
+                ← Volver
+              </button>
+            </div>
+
+            <div style={{display:'flex',gap:10,marginBottom:20}}>
+              {[
+                {id:'kanban', name:'⊞ Tablero'},
+                {id:'calendar', name:'📅 Calendario'}
+              ].map(v => (
+                <button key={v.id} onClick={() => setView(v.id)} style={{padding:'10px 20px',background:view === v.id ? '#3b82f6' : '#475569',border:'none',borderRadius:6,color:'white',cursor:'pointer',fontWeight:'bold'}}>
+                  {v.name}
+                </button>
+              ))}
+            </div>
+
+            {view === 'kanban' && <KanbanView />}
+            {view === 'calendar' && <CalendarView />}
+          </>
+        )}
+
+        {showNewProject && (
+          <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'rgba(0,0,0,0.7)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:1000}}>
+            <div style={{background:'#1e293b',borderRadius:12,padding:30,maxWidth:400,width:'90%'}}>
+              <h2 style={{marginBottom:20}}>Nuevo Proyecto</h2>
+              <input type="text" placeholder="Nombre del proyecto" value={newProjectName} onChange={(e) => setNewProjectName(e.target.value)} style={{width:'100%',padding:10,marginBottom:15,borderRadius:6,border:'1px solid #475569',background:'#0f172a',color:'white'}} />
+              <div style={{display:'flex',gap:10}}>
+                <button onClick={createProject} style={{flex:1,padding:10,background:'#3b82f6',border:'none',borderRadius:6,color:'white',cursor:'pointer',fontWeight:'bold'}}>
+                  Crear
+                </button>
+                <button onClick={() => setShowNewProject(false)} style={{flex:1,padding:10,background:'#475569',border:'none',borderRadius:6,color:'white',cursor:'pointer'}}>
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showNewTask && (
+          <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'rgba(0,0,0,0.7)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:1000}}>
+            <div style={{background:'#1e293b',borderRadius:12,padding:30,maxWidth:400,width:'90%'}}>
+              <h2 style={{marginBottom:20}}>Nueva Tarea</h2>
+              <input type="text" placeholder="Título de la tarea" value={newTaskTitle} onChange={(e) => setNewTaskTitle(e.target.value)} style={{width:'100%',padding:10,marginBottom:15,borderRadius:6,border:'1px solid #475569',background:'#0f172a',color:'white'}} />
+              <div style={{display:'flex',gap:10}}>
+                <button onClick={createTask} style={{flex:1,padding:10,background:'#3b82f6',border:'none',borderRadius:6,color:'white',cursor:'pointer',fontWeight:'bold'}}>
+                  Crear
+                </button>
+                <button onClick={() => setShowNewTask(false)} style={{flex:1,padding:10,background:'#475569',border:'none',borderRadius:6,color:'white',cursor:'pointer'}}>
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <TaskModal />
+      </div>
+    </div>
+  );
+}
