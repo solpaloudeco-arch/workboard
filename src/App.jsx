@@ -44,6 +44,7 @@ export default function WorkBoard() {
   const [showNewTask, setShowNewTask] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
   const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [commentText, setCommentText] = useState('');
 
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, 'projects'), (snapshot) => {
@@ -288,7 +289,6 @@ export default function WorkBoard() {
   // TASK MODAL
   const TaskModal = () => {
     if (!selectedTask) return null;
-    const [commentText, setCommentText] = useState('');
 
     return (
       <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'rgba(0,0,0,0.7)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:1000}}>
