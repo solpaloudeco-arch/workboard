@@ -16,6 +16,9 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
+provider.setCustomParameters({
+  client_id: '212877013133-ct1n9lpl17dd9uu77qn95q6cotv5hios.apps.googleusercontent.com'
+});
 
 const MEMBERS = [
   {id:1,name:"Sol"},{id:2,name:"Dolo"},{id:3,name:"Grace"},{id:4,name:"Caro"},
