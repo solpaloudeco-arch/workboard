@@ -1,439 +1,311 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
 
 const SUPABASE_URL = "https://ollqwsspjerttgwzmxkg.supabase.co";
 const SUPABASE_KEY = "sb_publishable_xtKliNdt0Bl2GFU1HdeO4g_QKJlZRUB";
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const STORAGE_KEY = "workboard_v3";
-const USER_KEY = "workboard_user_v1";
-const ADMIN_EMAIL = "info@solpaloudeco.com.ar";
-
-const MEMBER_COLORS = ["#ef4444","#f97316","#eab308","#22c55e","#14b8a6","#3b82f6","#8b5cf6","#ec4899","#06b6d4","#84cc16","#f43f5e","#a855f7","#0ea5e9","#10b981","#f59e0b","#6366f1","#d946ef","#fb923c"];
-const PROJECT_COLORS = ["#6366f1","#f59e0b","#22c55e","#ef4444","#14b8a6","#8b5cf6","#f97316","#ec4899","#0ea5e9","#84cc16"];
+const MEMBER_COLORS = ["#ef4444","#f97316","#eab308","#22c55e","#14b8a6","#3b82f6","#8b5cf6","#ec4899"];
+const PRIORITY = {alta:{label:"Alta",color:"#dc2626",bg:"#fef2f2"},media:{label:"Media",color:"#d97706",bg:"#fffbeb"},baja:{label:"Baja",color:"#16a34a",bg:"#f0fdf4"}};
+const COLUMNS = [{id:"todo",label:"Por hacer"},{id:"inprogress",label:"En progreso"},{id:"done",label:"Completado"}];
+const MONTHS = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+const DAYS = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
 
 const DEFAULT_MEMBERS = [
-  {id:1,name:"Sol",role:"Team"},{id:2,name:"Dolo",role:"Team"},
-  {id:3,name:"Grace",role:"Team"},{id:4,name:"Caro",role:"Team"},
-  {id:5,name:"Meli",role:"Team"},{id:6,name:"Rita",role:"Team"},
-  {id:7,name:"Mariela",role:"Team"},{id:8,name:"Tobal",role:"Team"},
-  {id:9,name:"Belen",role:"Team"},{id:10,name:"Azul",role:"Team"},
-  {id:11,name:"Cami",role:"Team"},{id:12,name:"Lu",role:"Team"},
-  {id:13,name:"Mary",role:"Team"},{id:14,name:"Lara B",role:"Team"},
-  {id:15,name:"Gaston",role:"Team"},{id:16,name:"Nico",role:"Team"},
-  {id:17,name:"Lean",role:"Team"},{id:18,name:"Leo",role:"Team"},
-  {id:19,name:"Dai",role:"Team"},{id:20,name:"Ailen",role:"Team"},
-  {id:21,name:"Lourdes",role:"Team"},{id:22,name:"Eze",role:"Team"},
-  {id:23,name:"Nina",role:"Team"},{id:24,name:"Naty",role:"Team"},
-  {id:25,name:"Paloma",role:"Team"},{id:26,name:"Tamara",role:"Team"},
-  {id:27,name:"Lara L",role:"Team"},{id:28,name:"Carlos",role:"Team"},
-  {id:29,name:"Juan Cruz",role:"Team"},{id:30,name:"Melisa",role:"Team"},
-  {id:31,name:"Cris",role:"Team"},{id:32,name:"P32",role:"Team"},
-  {id:33,name:"P33",role:"Team"},{id:34,name:"P34",role:"Team"},
-  {id:35,name:"P35",role:"Team"},{id:36,name:"P36",role:"Team"},
-  {id:37,name:"P37",role:"Team"},{id:38,name:"P38",role:"Team"},
-  {id:39,name:"Emi",role:"Team"},{id:40,name:"Yami",role:"Team"}
-].map((m,i)=>({...m,color:MEMBER_COLORS[i%MEMBER_COLORS.length]}));
+  {id:1,name:"Sol"},{id:2,name:"Dolo"},{id:3,name:"Grace"},{id:4,name:"Caro"},{id:5,name:"Meli"},{id:6,name:"Rita"},
+  {id:7,name:"Mariela"},{id:8,name:"Tobal"},{id:9,name:"Belen"},{id:10,name:"Azul"},{id:11,name:"Cami"},{id:12,name:"Lu"},
+  {id:13,name:"Mary"},{id:14,name:"Lara B"},{id:15,name:"Gaston"},{id:16,name:"Nico"},{id:17,name:"Lean"},{id:18,name:"Leo"},
+  {id:19,name:"Dai"},{id:20,name:"Ailen"},{id:21,name:"Lourdes"},{id:22,name:"Eze"},{id:23,name:"Nina"},{id:24,name:"Naty"},
+  {id:25,name:"Paloma"},{id:26,name:"Tamara"},{id:27,name:"Lara L"},{id:28,name:"Carlos"},{id:29,name:"Juan Cruz"},{id:30,name:"Melisa"},
+  {id:31,name:"Cris"},{id:32,name:"Emi"},{id:33,name:"Yami"},{id:34,name:"P32"},{id:35,name:"P33"},{id:36,name:"P34"},
+  {id:37,name:"P35"},{id:38,name:"P36"},{id:39,name:"P37"},{id:40,name:"P38"}
+].map((m,i)=>({...m,color:MEMBER_COLORS[i%MEMBER_COLORS.length],role:"Team"}));
 
-const DEFAULT_PROJECTS = [
-  {id:1,name:"Desarrollo Web",description:"Rediseño del sitio principal y mejoras de UX.",color:"#6366f1",memberIds:[1,2,3,4,5,6],createdBy:1,createdAt:Date.now()},
-  {id:2,name:"Campaña Marketing Q3",description:"Estrategia y ejecución de la campaña del tercer trimestre.",color:"#f59e0b",memberIds:[1,7,11,12],createdBy:7,createdAt:Date.now()},
-];
-
-const DEFAULT_TASKS = [
-  {id:1,projectId:1,title:"Definir objetivos Q3",description:"Reunión para establecer las metas y OKRs del trimestre.",assigneeId:1,dueDate:"2026-06-15",priority:"alta",column:"todo",comments:[],links:[],createdAt:Date.now()},
-  {id:2,projectId:1,title:"Diseño del nuevo dashboard",description:"Crear wireframes, prototipos y guía de estilo.",assigneeId:3,dueDate:"2026-06-20",priority:"alta",column:"inprogress",comments:[],links:[],createdAt:Date.now()},
-];
-
-const PRIORITY = {alta:{label:"Alta",color:"#dc2626",bg:"#fef2f2"},media:{label:"Media",color:"#d97706",bg:"#fffbeb"},baja:{label:"Baja",color:"#16a34a",bg:"#f0fdf4"}};
-const COLUMNS = [{id:"todo",label:"Por hacer",accent:"#6366f1",light:"#eef2ff"},{id:"inprogress",label:"En progreso",accent:"#f59e0b",light:"#fffbeb"},{id:"done",label:"Completado",accent:"#22c55e",light:"#f0fdf4"}];
-
-function initials(name){ return name.split(" ").map(n=>n[0]).join("").slice(0,2).toUpperCase(); }
-async function hashPin(pin){ const buf=await crypto.subtle.digest("SHA-256",new TextEncoder().encode("wb26_"+pin)); return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join(""); }
-
-function Avatar({member,size=32,style:extra={}}){
+function Avatar({member,size=32}){
   if(!member) return null;
-  return <div style={{width:size,height:size,borderRadius:"50%",background:member.color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:size*0.34,fontWeight:700,color:"#fff",flexShrink:0,border:"2px solid white",boxSizing:"border-box",...extra}}>{initials(member.name)}</div>;
+  return <div style={{width:size,height:size,borderRadius:"50%",background:member.color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:size*0.35,fontWeight:700,color:"#fff",border:"2px solid white"}}>{member.name.slice(0,2).toUpperCase()}</div>;
 }
 
-function MentionInput({value,onChange,onSubmit,placeholder,style,members}){
-  const [search,setSearch]=useState(null);
-  const [atPos,setAtPos]=useState(0);
-  const ref=useRef();
-  const handle=(e)=>{ const val=e.target.value,pos=e.target.selectionStart; const m=val.slice(0,pos).match(/@(\w*)$/); if(m){setSearch(m[1]);setAtPos(pos-m[0].length);}else setSearch(null); onChange(val); };
-  const insert=(member)=>{ const fn=member.name.split(" ")[0]; const cur=ref.current?ref.current.selectionStart:value.length; onChange(value.slice(0,atPos)+"@"+fn+" "+value.slice(cur)); setSearch(null); setTimeout(()=>ref.current?.focus(),0); };
-  const filtered=search!==null?members.filter(m=>m.name.toLowerCase().includes(search.toLowerCase())).slice(0,6):[];
-  return (
-    <div style={{position:"relative",flex:1}}>
-      <input ref={ref} value={value} onChange={handle} onKeyDown={e=>{if(e.key==="Enter"&&search===null)onSubmit();if(e.key==="Escape")setSearch(null);}} placeholder={placeholder} style={style}/>
-      {filtered.length>0&&(
-        <div style={{position:"absolute",bottom:"100%",left:0,right:0,background:"#fff",border:"1px solid #e2e8f0",borderRadius:8,boxShadow:"0 4px 16px rgba(0,0,0,0.14)",zIndex:300,marginBottom:4,overflow:"hidden"}}>
-          {filtered.map(m=>(<div key={m.id} onMouseDown={e=>{e.preventDefault();insert(m);}} style={{padding:"8px 12px",cursor:"pointer",display:"flex",alignItems:"center",gap:8,fontSize:13}} onMouseEnter={e=>e.currentTarget.style.background="#f8fafc"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}><Avatar member={m} size={24}/><div><div style={{fontWeight:600,color:"#1e293b"}}>{m.name}</div><div style={{fontSize:11,color:"#94a3b8"}}>{m.role}</div></div></div>))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function Keypad({onPress,onDelete}){
-  const keys=["1","2","3","4","5","6","7","8","9","","0","⌫"];
-  return <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,width:220,margin:"0 auto"}}>{keys.map((k,i)=>k===""?<div key={i}/>:<button key={i} onClick={()=>k==="⌫"?onDelete():onPress(k)} style={{padding:"16px 0",borderRadius:10,border:"1px solid #1e293b",background:k==="⌫"?"#0f172a":"#1e293b",color:k==="⌫"?"#64748b":"#fff",fontSize:k==="⌫"?20:18,fontWeight:600,cursor:"pointer"}} onMouseEnter={e=>e.currentTarget.style.background=k==="⌫"?"#1e293b":"#334155"} onMouseLeave={e=>e.currentTarget.style.background=k==="⌫"?"#0f172a":"#1e293b"}>{k}</button>)}</div>;
-}
-
-function AuthFlow({members,onLogin}){
-  const [step,setStep]=useState("pick");
-  const [selected,setSelected]=useState(null);
-  const [pin,setPin]=useState("");
-  const [pinConfirm,setPinConfirm]=useState("");
-  const [error,setError]=useState("");
-  const [loading,setLoading]=useState(false);
-  const [q,setQ]=useState("");
-  const filtered=members.filter(m=>m.name.toLowerCase().includes(q.toLowerCase()));
-  
-  const pickMember=(member)=>{ 
-    setSelected(member);
-    setError("");
-    setPin("");
-    setLoading(true); 
-    try{
-      const r=localStorage.getItem(`pin_${member.id}`);
-      setStep(r?"enter":"create");
-    }catch{
-      setStep("create");
-    } 
-    setLoading(false); 
-  };
-  
-  const pressPin=(d)=>{ 
-    if(step==="create"||step==="enter")setPin(p=>p.length<4?p+d:p); 
-    if(step==="confirm")setPinConfirm(p=>p.length<4?p+d:p); 
-  };
-  
-  const deletePin=()=>{ 
-    if(step==="confirm")setPinConfirm(p=>p.slice(0,-1));
-    else setPin(p=>p.slice(0,-1)); 
-  };
-  
-  useEffect(()=>{ 
-    if(step==="create"&&pin.length===4){
-      setTimeout(()=>{setStep("confirm");setError("");},150);
-    } 
-  },[pin,step]);
-  
-  useEffect(()=>{ 
-    if(step==="confirm"&&pinConfirm.length===4){
-      (async()=>{ 
-        if(pinConfirm!==pin){
-          setError("Los PINs no coinciden.");
-          setPin("");
-          setPinConfirm("");
-          setStep("create");
-          return;
-        } 
-        const h=await hashPin(pin);
-        try{
-          localStorage.setItem(`pin_${selected.id}`,h);
-        }catch{} 
-        onLogin(selected); 
-      })();
-    } 
-  },[pinConfirm,step]);
-  
-  useEffect(()=>{ 
-    if(step==="enter"&&pin.length===4){
-      (async()=>{ 
-        setLoading(true);
-        const h=await hashPin(pin);
-        try{
-          const r=localStorage.getItem(`pin_${selected.id}`);
-          if(r===h){
-            onLogin(selected);
-          }else{
-            setError("PIN incorrecto.");
-            setPin("");
-          }
-        }catch{
-          setError("Error al verificar.");
-          setPin("");
-        } 
-        setLoading(false); 
-      })();
-    } 
-  },[pin,step]);
-
-  return (
-    <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:20}}>
-      <h1 style={{color:"white",marginBottom:40,fontSize:44,fontWeight:700}}>📋 WorkBoard</h1>
-      
-      {step==="pick"&&(
-        <div style={{maxWidth:500,width:"100%",background:"#1e293b",padding:30,borderRadius:12,border:"1px solid #334155"}}>
-          <p style={{color:"#cbd5e1",marginBottom:20,fontSize:13,textTransform:"uppercase",letterSpacing:"0.1em",fontWeight:600}}>Selecciona tu nombre</p>
-          <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Buscar..." style={{width:"100%",padding:12,marginBottom:20,borderRadius:8,border:"1px solid #475569",background:"#0f172a",color:"white",fontSize:14}}/>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(100px, 1fr))",gap:10,maxHeight:400,overflowY:"auto"}}>
-            {filtered.map(m=><button key={m.id} onClick={()=>pickMember(m)} style={{padding:12,borderRadius:8,border:"1px solid #475569",background:"#0f172a",color:"white",cursor:"pointer",fontSize:13,fontWeight:600,transition:"all 0.2s"}} onMouseEnter={e=>e.currentTarget.style.background="#1e293b"} onMouseLeave={e=>e.currentTarget.style.background="#0f172a"}>{m.name}</button>)}
-          </div>
-        </div>
-      )}
-      
-      {(step==="create"||step==="confirm"||step==="enter")&&selected&&(
-        <div style={{textAlign:"center",background:"#1e293b",padding:40,borderRadius:12,border:"1px solid #334155",maxWidth:350,width:"100%"}}>
-          <p style={{color:"#cbd5e1",marginBottom:10,fontSize:13,textTransform:"uppercase",letterSpacing:"0.1em",fontWeight:600}}>
-            {step==="create"?"Crea tu PIN":(step==="confirm"?"Confirma tu PIN":"Ingresa tu PIN")}
-          </p>
-          <div style={{display:"flex",gap:8,justifyContent:"center",margin:"20px 0"}}>
-            {[0,1,2,3].map(i=>(<div key={i} style={{width:18,height:18,borderRadius:"50%",background:(step==="create"||step==="confirm")?((step==="confirm"?pinConfirm:pin).length>i?"#f59e0b":"transparent"):((pin).length>i?"#f59e0b":"transparent"),border:`2px solid ${(step==="create"||step==="confirm")?((step==="confirm"?pinConfirm:pin).length>i?"#f59e0b":"#334155"):((pin).length>i?"#f59e0b":"#334155")}`,transition:"all 0.15s"}}/>))}
-          </div>
-          <Keypad onPress={pressPin} onDelete={deletePin}/>
-          {error&&<p style={{color:"#ef4444",marginTop:15,fontSize:13}}>{error}</p>}
-          {loading&&<p style={{color:"#94a3b8",marginTop:15,fontSize:13}}>Verificando...</p>}
-        </div>
-      )}
-    </div>
-  );
+function Badge({label,color}){
+  return <span style={{fontSize:11,fontWeight:700,padding:"4px 10px",borderRadius:20,background:color+"15",color,border:`1px solid ${color}`}}>{label}</span>;
 }
 
 export default function App(){
   const [user,setUser]=useState(null);
+  const [pin,setPin]=useState("");
+  const [pinInput,setPinInput]=useState("");
+  const [stage,setStage]=useState("selectUser");
+  const [search,setSearch]=useState("");
   const [projects,setProjects]=useState([]);
   const [tasks,setTasks]=useState([]);
-  const [selectedProject,setSelectedProject]=useState(null);
-  const [selectedTask,setSelectedTask]=useState(null);
-  const [newProjectName,setNewProjectName]=useState("");
-  const [newTaskData,setNewTaskData]=useState({title:"",description:"",assigneeId:null,dueDate:"",priority:"media"});
-  const [commentText,setCommentText]=useState("");
-  const [draggedTask,setDraggedTask]=useState(null);
-  const [loading,setLoading]=useState(true);
+  const [selected,setSelected]=useState(null);
+  const [task,setTask]=useState(null);
+  const [view,setView]=useState("board");
+  const [newProj,setNewProj]=useState("");
+  const [comment,setComment]=useState("");
+  const [replyingTo,setReplyingTo]=useState(null);
+  const [replyText,setReplyText]=useState("");
 
   // CARGAR DATOS DE SUPABASE
   useEffect(()=>{
-    const initData=async()=>{
+    const load=async()=>{
       try{
-        // Cargar proyectos
-        const{data:projData}=await supabase.from("projects").select("*");
-        if(projData)setProjects(projData);
-        else{
-          setProjects(DEFAULT_PROJECTS);
-          for(let p of DEFAULT_PROJECTS)await supabase.from("projects").insert([p]);
-        }
-        
-        // Cargar tareas
-        const{data:taskData}=await supabase.from("tasks").select("*");
-        if(taskData)setTasks(taskData);
-        else{
-          setTasks(DEFAULT_TASKS);
-          for(let t of DEFAULT_TASKS)await supabase.from("tasks").insert([t]);
-        }
+        const {data:pData}=await supabase.from("projects").select("*");
+        if(pData) setProjects(pData);
+        const {data:tData}=await supabase.from("tasks").select("*");
+        if(tData) setTasks(tData);
       }catch(e){
-        console.log("Error loading from Supabase, using localStorage");
-        const stored=localStorage.getItem(STORAGE_KEY);
-        if(stored){
-          const{projects:p,tasks:t}=JSON.parse(stored);
-          setProjects(p||DEFAULT_PROJECTS);
-          setTasks(t||DEFAULT_TASKS);
-        }else{
-          setProjects(DEFAULT_PROJECTS);
-          setTasks(DEFAULT_TASKS);
-        }
+        console.log("Error loading:",e);
       }
-      setLoading(false);
     };
-    initData();
+    load();
   },[]);
 
-  // SUSCRIPCIÓN EN TIEMPO REAL A CAMBIOS
+  // REAL-TIME SYNC - PROJECTS
   useEffect(()=>{
-    const sub=supabase.from("projects").on("*",payload=>{
-      if(payload.eventType==="INSERT")setProjects(p=>[...p,payload.new]);
-      if(payload.eventType==="UPDATE")setProjects(p=>p.map(x=>x.id===payload.new.id?payload.new:x));
-      if(payload.eventType==="DELETE")setProjects(p=>p.filter(x=>x.id!==payload.old.id));
+    const sub=supabase.channel("projects").on("postgres_changes",{event:"*",schema:"public",table:"projects"},payload=>{
+      if(payload.eventType==="INSERT") setProjects(p=>[...p,payload.new]);
+      if(payload.eventType==="UPDATE") setProjects(p=>p.map(x=>x.id===payload.new.id?payload.new:x));
+      if(payload.eventType==="DELETE") setProjects(p=>p.filter(x=>x.id!==payload.old.id));
     }).subscribe();
-    return()=>supabase.removeSubscription(sub);
+    return ()=>supabase.removeChannel(sub);
   },[]);
 
+  // REAL-TIME SYNC - TASKS
   useEffect(()=>{
-    const sub=supabase.from("tasks").on("*",payload=>{
-      if(payload.eventType==="INSERT")setTasks(t=>[...t,payload.new]);
-      if(payload.eventType==="UPDATE")setTasks(t=>t.map(x=>x.id===payload.new.id?payload.new:x));
-      if(payload.eventType==="DELETE")setTasks(t=>t.filter(x=>x.id!==payload.old.id));
+    const sub=supabase.channel("tasks").on("postgres_changes",{event:"*",schema:"public",table:"tasks"},payload=>{
+      if(payload.eventType==="INSERT") setTasks(t=>[...t,payload.new]);
+      if(payload.eventType==="UPDATE"){
+        setTasks(t=>t.map(x=>x.id===payload.new.id?payload.new:x));
+        if(task?.id===payload.new.id) setTask(payload.new);
+      }
+      if(payload.eventType==="DELETE") setTasks(t=>t.filter(x=>x.id!==payload.old.id));
     }).subscribe();
-    return()=>supabase.removeSubscription(sub);
-  },[]);
+    return ()=>supabase.removeChannel(sub);
+  },[task?.id]);
 
-  // GUARDAR LOCALMENTE TAMBIÉN PARA BACKUP
-  useEffect(()=>{
-    if(projects.length>0||tasks.length>0)localStorage.setItem(STORAGE_KEY,JSON.stringify({projects,tasks}));
-  },[projects,tasks]);
+  const selectUser=member=>{
+    setUser(member);
+    setStage("pin");
+    setPinInput("");
+  };
+
+  const createPin=()=>{
+    if(pinInput.length===4){
+      setPin(pinInput);
+      setStage("confirmPin");
+      setPinInput("");
+    }
+  };
+
+  const confirmPin=()=>{
+    if(pinInput===pin){
+      setStage("app");
+    }else{
+      alert("PIN incorrecto");
+      setPinInput("");
+    }
+  };
 
   const createProject=async()=>{
-    if(!newProjectName.trim())return;
-    const newProj={id:Date.now(),name:newProjectName,description:"",color:PROJECT_COLORS[projects.length%PROJECT_COLORS.length],memberIds:[user.id],createdBy:user.id,createdAt:Date.now()};
+    if(!newProj.trim()) return;
+    const newP={id:Date.now(),name:newProj,description:"",color:"#3b82f6",memberIds:[user.id],createdBy:user.id,createdAt:new Date().toISOString()};
     try{
-      await supabase.from("projects").insert([newProj]);
-      setProjects([...projects,newProj]);
+      await supabase.from("projects").insert([newP]);
     }catch(e){
-      setProjects([...projects,newProj]);
+      console.log("Error:",e);
     }
-    setNewProjectName("");
+    setNewProj("");
   };
 
   const createTask=async()=>{
-    if(!newTaskData.title.trim()||!selectedProject)return;
-    const newTask={id:Date.now(),projectId:selectedProject.id,...newTaskData,column:"todo",comments:[],links:[],createdAt:Date.now()};
+    if(!selected) return;
+    const newT={id:Date.now(),projectId:selected.id,title:"Nueva tarea",description:"",assigneeId:user.id,priority:"media",dueDate:"",col:"todo",comments:[],links:[],createdAt:new Date().toISOString()};
     try{
-      await supabase.from("tasks").insert([newTask]);
-      setTasks([...tasks,newTask]);
+      await supabase.from("tasks").insert([newT]);
     }catch(e){
-      setTasks([...tasks,newTask]);
+      console.log("Error:",e);
     }
-    setNewTaskData({title:"",description:"",assigneeId:null,dueDate:"",priority:"media"});
   };
 
-  const updateTask=async(taskId,updates)=>{
+  const updateTask=async(updates)=>{
     try{
-      await supabase.from("tasks").update(updates).eq("id",taskId);
-      setTasks(tasks.map(t=>t.id===taskId?{...t,...updates}:t));
+      await supabase.from("tasks").update(updates).eq("id",task.id);
     }catch(e){
-      setTasks(tasks.map(t=>t.id===taskId?{...t,...updates}:t));
+      console.log("Error:",e);
     }
   };
 
-  const deleteTask=async(taskId)=>{
+  const deleteTask=async()=>{
     try{
-      await supabase.from("tasks").delete().eq("id",taskId);
-      setTasks(tasks.filter(t=>t.id!==taskId));
+      await supabase.from("tasks").delete().eq("id",task.id);
+      setTask(null);
     }catch(e){
-      setTasks(tasks.filter(t=>t.id!==taskId));
-    }
-    setSelectedTask(null);
-  };
-
-  const addComment=async(taskId,text)=>{
-    const task=tasks.find(t=>t.id===taskId);
-    if(!task)return;
-    const newComments=[...(task.comments||[]),{id:Date.now(),author:user.name,text,createdAt:Date.now()}];
-    await updateTask(taskId,{comments:newComments});
-    if(selectedTask?.id===taskId)setSelectedTask({...selectedTask,comments:newComments});
-    setCommentText("");
-  };
-
-  const handleDragStart=(e,task)=>{
-    setDraggedTask(task);
-    e.dataTransfer.effectAllowed="move";
-  };
-
-  const handleDragOver=(e)=>{
-    e.preventDefault();
-    e.dataTransfer.dropEffect="move";
-  };
-
-  const handleDrop=(e,column)=>{
-    e.preventDefault();
-    if(draggedTask&&draggedTask.projectId===selectedProject?.id){
-      updateTask(draggedTask.id,{column});
-      setDraggedTask(null);
+      console.log("Error:",e);
     }
   };
 
-  if(!user)return <AuthFlow members={DEFAULT_MEMBERS} onLogin={setUser}/>;
+  const addComment=async()=>{
+    if(!comment.trim() || !task) return;
+    const newC={id:Date.now(),text:comment,authorId:user.id,createdAt:new Date().toISOString(),replies:[]};
+    await updateTask({comments:[...(task.comments||[]),newC]});
+    setComment("");
+  };
+
+  const addReply=async()=>{
+    if(!replyText.trim() || !replyingTo || !task) return;
+    const newReply={id:Date.now(),text:replyText,authorId:user.id,createdAt:new Date().toISOString()};
+    const updated=task.comments.map(c=>c.id===replyingTo?{...c,replies:[...(c.replies||[]),newReply]}:c);
+    await updateTask({comments:updated});
+    setReplyText("");
+    setReplyingTo(null);
+  };
+
+  if(!user){
+    const filtered=DEFAULT_MEMBERS.filter(m=>m.name.toLowerCase().includes(search.toLowerCase()));
+    return (
+      <div style={{display:"flex",flexDirection:"column",justifyContent:"center",alignItems:"center",height:"100vh",background:"linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",padding:20}}>
+        <h1 style={{color:"white",marginBottom:40,fontSize:44,fontWeight:700}}>📋 WorkBoard</h1>
+        {stage==="selectUser"&&(
+          <div style={{maxWidth:500,width:"100%"}}>
+            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar..." style={{width:"100%",padding:12,marginBottom:20,borderRadius:8,border:"1px solid #3b82f6",background:"#0f172a",color:"white",fontSize:14}}/>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(100px, 1fr))",gap:10,maxHeight:400,overflowY:"auto"}}>
+              {filtered.map(m=><button key={m.id} onClick={()=>selectUser(m)} style={{padding:12,borderRadius:8,border:"1px solid #475569",background:"#0f172a",color:"white",cursor:"pointer",fontSize:13,fontWeight:600}}>{m.name}</button>)}
+            </div>
+          </div>
+        )}
+        {stage==="pin"&&(
+          <div style={{textAlign:"center",background:"#1e293b",padding:40,borderRadius:12,border:"1px solid #334155",maxWidth:350,width:"100%"}}>
+            <p style={{color:"#cbd5e1",marginBottom:20,fontSize:14,fontWeight:600}}>Crea tu PIN (4 dígitos)</p>
+            <input type="password" maxLength="4" value={pinInput} onChange={e=>setPinInput(e.target.value)} style={{fontSize:20,textAlign:"center",padding:12,marginBottom:20,borderRadius:8,border:"1px solid #3b82f6",background:"#0f172a",color:"white",width:"100%"}}/>
+            <button onClick={createPin} disabled={pinInput.length!==4} style={{width:"100%",padding:10,background:pinInput.length===4?"#3b82f6":"#475569",border:"none",borderRadius:8,color:"white",cursor:"pointer",fontWeight:600}}>Siguiente</button>
+          </div>
+        )}
+        {stage==="confirmPin"&&(
+          <div style={{textAlign:"center",background:"#1e293b",padding:40,borderRadius:12,border:"1px solid #334155",maxWidth:350,width:"100%"}}>
+            <p style={{color:"#cbd5e1",marginBottom:20,fontSize:14,fontWeight:600}}>Confirma tu PIN</p>
+            <input type="password" maxLength="4" value={pinInput} onChange={e=>setPinInput(e.target.value)} style={{fontSize:20,textAlign:"center",padding:12,marginBottom:20,borderRadius:8,border:"1px solid #10b981",background:"#0f172a",color:"white",width:"100%"}}/>
+            <button onClick={confirmPin} style={{width:"100%",padding:10,background:"#10b981",border:"none",borderRadius:8,color:"white",cursor:"pointer",fontWeight:600}}>Confirmar</button>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   const userProjects=projects.filter(p=>!p.memberIds||p.memberIds.includes(user.id));
-  const projTasks=selectedProject?tasks.filter(t=>t.projectId===selectedProject.id):[];
-  const assignee=DEFAULT_MEMBERS.find(m=>m.id===selectedTask?.assigneeId);
+  const projTasks=selected?tasks.filter(t=>t.projectId===selected.id):[];
 
-  return(
-    <div style={{display:"flex",height:"100vh",background:"#0f172a",color:"#fff",fontFamily:"system-ui, -apple-system, sans-serif"}}>
-      <div style={{width:280,background:"#1e293b",borderRight:"1px solid #334155",padding:20,overflowY:"auto"}}>
+  return (
+    <div style={{display:"flex",height:"100vh",background:"#0f172a",color:"white"}}>
+      <div style={{width:280,background:"#1e293b",padding:20,overflowY:"auto",borderRight:"1px solid #334155"}}>
         <h2 style={{marginBottom:20,fontSize:18,fontWeight:700}}>📋 WorkBoard</h2>
-        <div style={{padding:12,background:"#0f172a",borderRadius:8,marginBottom:20,border:"1px solid #334155"}}>
-          <p style={{fontSize:11,color:"#94a3b8",textTransform:"uppercase",letterSpacing:"0.05em",fontWeight:600}}>Conectado</p>
-          <div style={{display:"flex",alignItems:"center",gap:10,marginTop:10}}>
-            <Avatar member={user} size={32}/>
-            <div><p style={{fontWeight:600,fontSize:14}}>{user.name}</p><p style={{fontSize:11,color:"#94a3b8"}}>{user.role}</p></div>
-          </div>
+        <div style={{padding:12,background:"#0f172a",borderRadius:8,marginBottom:20}}>
+          <p style={{fontSize:12,color:"#94a3b8"}}>Conectado: {user.name}</p>
         </div>
-        <button onClick={()=>setUser(null)} style={{width:"100%",padding:10,background:"#ef4444",border:"none",borderRadius:8,color:"white",cursor:"pointer",fontWeight:600,marginBottom:20}}>Cerrar sesión</button>
-        <button onClick={()=>setNewProjectName("new")} style={{width:"100%",padding:10,background:"#3b82f6",border:"none",borderRadius:8,color:"white",cursor:"pointer",fontWeight:600,marginBottom:25}}>+ Nuevo proyecto</button>
-        <h3 style={{fontSize:12,fontWeight:700,marginBottom:12,color:"#94a3b8",textTransform:"uppercase",letterSpacing:"0.05em"}}>Proyectos ({userProjects.length})</h3>
+        <button onClick={()=>setUser(null)} style={{width:"100%",padding:10,background:"#ef4444",border:"none",borderRadius:6,color:"white",cursor:"pointer",fontWeight:600,marginBottom:20}}>Cerrar sesión</button>
+        <button onClick={()=>setNewProj("new")} style={{width:"100%",padding:10,background:"#3b82f6",border:"none",borderRadius:6,color:"white",cursor:"pointer",fontWeight:600,marginBottom:20}}>+ Proyecto</button>
+        <h3 style={{fontSize:12,fontWeight:700,marginBottom:12,color:"#94a3b8"}}>PROYECTOS ({userProjects.length})</h3>
         {userProjects.map(p=>(
-          <div key={p.id} onClick={()=>setSelectedProject(p)} style={{padding:12,background:selectedProject?.id===p.id?"#3b82f6":"#0f172a",borderRadius:8,marginBottom:8,cursor:"pointer",border:selectedProject?.id===p.id?"1px solid #60a5fa":"1px solid #334155",transition:"all 0.2s",borderLeft:`4px solid ${p.color}`}}>
-            <p style={{fontWeight:600,fontSize:13}}>{p.name}</p>
-            <p style={{fontSize:11,color:"#94a3b8",marginTop:5}}>📌 {projTasks.filter(t=>t.projectId===p.id).length}</p>
+          <div key={p.id} onClick={()=>setSelected(p)} style={{padding:12,background:selected?.id===p.id?"#3b82f6":"#0f172a",borderRadius:8,marginBottom:8,cursor:"pointer",border:"1px solid #334155"}}>
+            <p style={{fontWeight:600,fontSize:13,margin:0}}>{p.name}</p>
+            <p style={{fontSize:11,color:"#94a3b8",margin:"5px 0 0 0"}}>📌 {projTasks.length}</p>
           </div>
         ))}
       </div>
 
       <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
-        {selectedProject?(
+        {selected?(
           <>
-            <div style={{padding:25,borderBottom:"1px solid #334155",background:"#1e293b"}}>
+            <div style={{padding:20,borderBottom:"1px solid #334155",background:"#1e293b"}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                <h1 style={{fontSize:28,fontWeight:700,color:selectedProject.color,margin:0}}>{selectedProject.name}</h1>
-                <button onClick={()=>setSelectedProject(null)} style={{padding:"8px 16px",background:"#475569",border:"none",borderRadius:8,color:"white",cursor:"pointer",fontWeight:600}}>← Volver</button>
+                <h1 style={{margin:0,fontSize:24,fontWeight:700}}>{selected.name}</h1>
+                <div style={{display:"flex",gap:10}}>
+                  {[{id:"board",label:"⊞ Tablero"},{id:"calendar",label:"📅 Calendario"}].map(v=>(
+                    <button key={v.id} onClick={()=>setView(v.id)} style={{padding:"8px 16px",background:view===v.id?"#3b82f6":"#475569",border:"none",borderRadius:6,color:"white",cursor:"pointer",fontWeight:600,fontSize:13}}>{v.label}</button>
+                  ))}
+                  <button onClick={()=>setSelected(null)} style={{padding:"8px 16px",background:"#475569",border:"none",borderRadius:6,color:"white",cursor:"pointer"}}>← Volver</button>
+                </div>
               </div>
             </div>
-            <div style={{flex:1,display:"grid",gridTemplateColumns:"repeat(3, 1fr)",gap:20,padding:25,overflowY:"auto"}}>
-              {COLUMNS.map(col=>(
-                <div key={col.id} onDragOver={handleDragOver} onDrop={e=>handleDrop(e,col.id)} style={{background:"#1e293b",borderRadius:12,padding:15,border:`1px solid ${col.accent}`,opacity:draggedTask?.column!==col.id?1:0.5}}>
-                  <h3 style={{fontSize:14,fontWeight:700,marginBottom:15,color:col.accent,display:"flex",gap:8,alignItems:"center"}}>
-                    <span style={{width:24,height:24,borderRadius:"50%",background:col.light,color:col.accent,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700}}>
-                      {projTasks.filter(t=>t.column===col.id).length}
-                    </span>
-                    {col.label}
-                  </h3>
-                  <div style={{display:"flex",flexDirection:"column",gap:10}}>
-                    {projTasks.filter(t=>t.column===col.id).map(t=>{
-                      const tassignee=DEFAULT_MEMBERS.find(m=>m.id===t.assigneeId);
-                      return(
-                        <div key={t.id} draggable onDragStart={e=>handleDragStart(e,t)} onClick={()=>setSelectedTask(t)} style={{background:"#0f172a",padding:12,borderRadius:8,cursor:"move",border:`1px solid ${t.priority===undefined||t.priority==="baja"?"#16a34a":t.priority==="media"?"#d97706":"#dc2626"}`,borderLeft:`4px solid ${t.priority===undefined||t.priority==="baja"?"#16a34a":t.priority==="media"?"#d97706":"#dc2626"}`,transition:"all 0.2s"}}>
-                          <p style={{fontWeight:600,fontSize:13,marginBottom:8}}>{t.title}</p>
-                          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:11,color:"#94a3b8"}}>
-                            {tassignee&&<Avatar member={tassignee} size={20}/>}
-                            <span>{PRIORITY[t.priority||"baja"].label}</span>
+
+            <div style={{flex:1,overflow:"hidden",padding:20}}>
+              {view==="board"&&(
+                <div style={{display:"grid",gridTemplateColumns:"repeat(3, 1fr)",gap:20,height:"100%"}}>
+                  {COLUMNS.map(col=>(
+                    <div key={col.id} style={{background:"#1e293b",borderRadius:12,padding:15,border:"1px solid #334155",display:"flex",flexDirection:"column",overflow:"hidden"}}>
+                      <h3 style={{marginBottom:15,fontSize:14,fontWeight:700}}>{col.label} ({projTasks.filter(t=>t.col===col.id).length})</h3>
+                      <div style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:10}}>
+                        {projTasks.filter(t=>t.col===col.id).map(t=>(
+                          <div key={t.id} onClick={()=>setTask(t)} style={{background:"#0f172a",padding:12,borderRadius:8,cursor:"pointer",border:`2px solid ${PRIORITY[t.priority||"media"].color}`}}>
+                            <p style={{fontWeight:600,fontSize:13,margin:0,marginBottom:5}}>{t.title}</p>
+                            <div style={{display:"flex",gap:5,fontSize:11}}><Badge label={PRIORITY[t.priority||"media"].label} color={PRIORITY[t.priority||"media"].color}/></div>
                           </div>
-                        </div>
-                      );
-                    })}
-                    <button onClick={()=>setNewTaskData({...newTaskData,title:""})} style={{padding:10,background:"rgba(255,255,255,0.05)",border:"1px dashed #475569",borderRadius:8,color:"#94a3b8",cursor:"pointer",fontSize:13,fontWeight:600,marginTop:5}}>+ Tarea</button>
+                        ))}
+                      </div>
+                      <button onClick={createTask} style={{marginTop:10,padding:10,background:"rgba(59,130,246,0.1)",border:"1px dashed #3b82f6",borderRadius:6,color:"#3b82f6",cursor:"pointer",fontWeight:600,fontSize:13}}>+ Tarea</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {view==="calendar"&&(
+                <div style={{overflowY:"auto",height:"100%"}}>
+                  <h2 style={{marginBottom:20}}>{MONTHS[new Date().getMonth()]} {new Date().getFullYear()}</h2>
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:10}}>
+                    {DAYS.map(d=><div key={d} style={{textAlign:"center",fontWeight:700,color:"#94a3b8",fontSize:12}}>{d}</div>)}
+                    {Array(42).fill(0).map((_, i)=><div key={i} style={{minHeight:60,background:"#1e293b",borderRadius:8,padding:8,border:"1px solid #334155",fontSize:11}}></div>)}
                   </div>
                 </div>
-              ))}
+              )}
             </div>
           </>
-        ):<div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",flex:1,color:"#94a3b8"}}><p style={{fontSize:20,fontWeight:600}}>Selecciona un proyecto</p></div>}
+        ):<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:"#94a3b8"}}><p>Selecciona un proyecto</p></div>}
 
-        {selectedTask&&(
-          <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,0.7)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000}}>
-            <div style={{background:"#1e293b",borderRadius:12,padding:30,maxWidth:600,width:"90%",maxHeight:"80vh",overflowY:"auto",border:"1px solid #334155"}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"start",marginBottom:25}}>
-                <div><h2 style={{margin:0,fontSize:20,fontWeight:700}}>{selectedTask.title}</h2><p style={{fontSize:12,color:"#94a3b8",marginTop:5}}>{selectedTask.description}</p></div>
-                <button onClick={()=>setSelectedTask(null)} style={{background:"none",border:"none",color:"#94a3b8",cursor:"pointer",fontSize:24,padding:0}}>✕</button>
-              </div>
-              <div style={{display:"flex",gap:15,marginBottom:25,fontSize:12}}>
-                {assignee&&<div><span style={{color:"#94a3b8"}}>Asignado a: </span><Avatar member={assignee} size={24} style={{marginTop:5}}/></div>}
-                <div><span style={{color:"#94a3b8"}}>Prioridad: </span><span style={{color:PRIORITY[selectedTask.priority||"baja"].color,fontWeight:600}}>{PRIORITY[selectedTask.priority||"baja"].label}</span></div>
-                {selectedTask.dueDate&&<div><span style={{color:"#94a3b8"}}>Vence: </span><span>{new Date(selectedTask.dueDate).toLocaleDateString()}</span></div>}
+        {task&&(
+          <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000}}>
+            <div style={{background:"#1e293b",borderRadius:12,padding:30,maxWidth:600,width:"90%",maxHeight:"80vh",overflowY:"auto"}}>
+              <div style={{display:"flex",justifyContent:"space-between",marginBottom:20}}>
+                <h2 style={{margin:0}}>{task.title}</h2>
+                <button onClick={()=>setTask(null)} style={{background:"none",border:"none",color:"white",cursor:"pointer",fontSize:20}}>×</button>
               </div>
               <div style={{background:"#0f172a",padding:15,borderRadius:8,marginBottom:20}}>
-                <h4 style={{marginBottom:12,fontSize:13,fontWeight:600,color:"#3b82f6"}}>💬 Comentarios ({selectedTask.comments?.length||0})</h4>
-                {selectedTask.comments?.map(c=><div key={c.id} style={{background:"#1e293b",padding:10,borderRadius:6,marginBottom:10}}><p style={{fontSize:12,color:"#3b82f6",fontWeight:600,margin:"0 0 5px 0"}}>{c.author}</p><p style={{margin:0,fontSize:13,color:"#cbd5e1"}}>{c.text}</p></div>)}
-                <MentionInput value={commentText} onChange={setCommentText} onSubmit={()=>commentText.trim()&&addComment(selectedTask.id,commentText)} placeholder="Agregar comentario..." members={DEFAULT_MEMBERS} style={{width:"100%",padding:10,marginTop:10,borderRadius:6,border:"1px solid #475569",background:"#0f172a",color:"white",fontSize:13}}/>
+                <h4 style={{marginBottom:10}}>💬 Comentarios ({task.comments?.length||0})</h4>
+                {task.comments?.map(c=>{
+                  const author=DEFAULT_MEMBERS.find(m=>m.id===c.authorId);
+                  return (
+                    <div key={c.id} style={{background:"#1e293b",padding:10,borderRadius:6,marginBottom:10}}>
+                      <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:8}}>
+                        <Avatar member={author} size={24}/>
+                        <div>
+                          <p style={{margin:0,fontWeight:600,fontSize:12}}>{author?.name}</p>
+                          <p style={{margin:0,fontSize:10,color:"#94a3b8"}}>{new Date(c.createdAt).toLocaleString()}</p>
+                        </div>
+                      </div>
+                      <p style={{margin:0,fontSize:12,color:"#cbd5e1"}}>{c.text}</p>
+                      {(c.replies||[]).length>0&&<div style={{marginLeft:20,marginTop:8,paddingLeft:10,borderLeft:"2px solid #334155"}}>{c.replies.map(r=>{const rauth=DEFAULT_MEMBERS.find(m=>m.id===r.authorId);return(<div key={r.id} style={{marginBottom:8}}><div style={{display:"flex",gap:6}}><Avatar member={rauth} size={18}/><div><p style={{margin:0,fontSize:11,fontWeight:600}}>{rauth?.name}</p><p style={{margin:0,fontSize:10,color:"#cbd5e1"}}>{r.text}</p></div></div></div>);})}</div>}
+                      <button onClick={()=>setReplyingTo(c.id)} style={{fontSize:11,color:"#3b82f6",background:"none",border:"none",cursor:"pointer",marginTop:6}}>💬 Responder</button>
+                    </div>
+                  );
+                })}
+                {replyingTo&&<div style={{background:"#f0f9ff",padding:10,borderRadius:8,marginBottom:10}}><input value={replyText} onChange={e=>setReplyText(e.target.value)} placeholder="Respuesta..." style={{width:"100%",padding:8,marginBottom:8,borderRadius:6,border:"1px solid #bae6fd",background:"#f8fafc",color:"#1e293b"}}/><div style={{display:"flex",gap:8}}><button onClick={addReply} style={{flex:1,padding:8,background:"#3b82f6",border:"none",borderRadius:6,color:"white",cursor:"pointer",fontWeight:600,fontSize:12}}>Enviar</button><button onClick={()=>{setReplyingTo(null);setReplyText("");}} style={{flex:1,padding:8,background:"#e2e8f0",border:"none",borderRadius:6,color:"#475569",cursor:"pointer",fontSize:12}}>Cancelar</button></div></div>}
+                <div style={{display:"flex",gap:8}}><input value={comment} onChange={e=>setComment(e.target.value)} placeholder="Nuevo comentario..." style={{flex:1,padding:8,borderRadius:6,border:"1px solid #e2e8f0",background:"#0f172a",color:"white",fontSize:12}}/><button onClick={addComment} style={{padding:8,background:"#3b82f6",border:"none",borderRadius:6,color:"white",cursor:"pointer",fontWeight:600,fontSize:12}}>Enviar</button></div>
               </div>
               <div style={{display:"flex",gap:10}}>
-                <button onClick={()=>deleteTask(selectedTask.id)} style={{flex:1,padding:10,background:"#ef4444",border:"none",borderRadius:6,color:"white",cursor:"pointer",fontWeight:600,fontSize:13}}>🗑 Eliminar</button>
-                <button onClick={()=>setSelectedTask(null)} style={{flex:1,padding:10,background:"#475569",border:"none",borderRadius:6,color:"white",cursor:"pointer",fontWeight:600,fontSize:13}}>Cerrar</button>
+                <button onClick={deleteTask} style={{flex:1,padding:10,background:"#ef4444",border:"none",borderRadius:6,color:"white",cursor:"pointer",fontWeight:600}}>Eliminar</button>
+                <button onClick={()=>setTask(null)} style={{flex:1,padding:10,background:"#475569",border:"none",borderRadius:6,color:"white",cursor:"pointer"}}>Cerrar</button>
               </div>
             </div>
           </div>
         )}
 
-        {newProjectName&&(
-          <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,0.7)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000}}>
-            <div style={{background:"#1e293b",borderRadius:12,padding:30,maxWidth:400,width:"90%",border:"1px solid #334155"}}>
-              <h2 style={{marginBottom:20,fontSize:18,fontWeight:600}}>Nuevo proyecto</h2>
-              <input value={newProjectName==="new"?"":newProjectName} onChange={e=>setNewProjectName(e.target.value)} placeholder="Nombre del proyecto" style={{width:"100%",padding:12,marginBottom:20,borderRadius:8,border:"1px solid #475569",background:"#0f172a",color:"white",fontSize:13}}/>
+        {newProj&&(
+          <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000}}>
+            <div style={{background:"#1e293b",borderRadius:12,padding:30,maxWidth:400,width:"90%"}}>
+              <h2 style={{marginBottom:20}}>Nuevo Proyecto</h2>
+              <input value={newProj==="new"?"":newProj} onChange={e=>setNewProj(e.target.value)} placeholder="Nombre" style={{width:"100%",padding:10,marginBottom:20,borderRadius:8,border:"1px solid #3b82f6",background:"#0f172a",color:"white"}}/>
               <div style={{display:"flex",gap:10}}>
                 <button onClick={createProject} style={{flex:1,padding:10,background:"#3b82f6",border:"none",borderRadius:6,color:"white",cursor:"pointer",fontWeight:600}}>Crear</button>
-                <button onClick={()=>setNewProjectName("")} style={{flex:1,padding:10,background:"#475569",border:"none",borderRadius:6,color:"white",cursor:"pointer",fontWeight:600}}>Cancelar</button>
+                <button onClick={()=>setNewProj("")} style={{flex:1,padding:10,background:"#475569",border:"none",borderRadius:6,color:"white",cursor:"pointer"}}>Cancelar</button>
               </div>
             </div>
           </div>
@@ -442,4 +314,3 @@ export default function App(){
     </div>
   );
 }
-
